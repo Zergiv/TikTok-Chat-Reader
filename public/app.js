@@ -30,7 +30,7 @@ function connect() {
         connection.connect(uniqueId, {
             enableExtendedGiftInfo: true
         }).then(state => {
-            $('#stateText').text(`Connected to roomId ${state.roomId}`);
+            $('#stateText').text(`Conectado a la sala roomId ${state.roomId}`);
 
             // reset stats
             viewerCount = 0;
