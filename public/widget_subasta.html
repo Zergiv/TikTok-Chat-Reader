@@ -1,0 +1,3074 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget Subasta</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: transparent;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      min-height: 100vh;
+    }
+    
+    .widget-container {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border: 4px solid #ffd700;
+      border-radius: 25px;
+      padding: 25px;
+      width: 98%;
+      max-width: 450px;
+      height: 98vh;
+      color: white;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Header con Timer */
+    .header {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    
+    .title {
+      display:none;
+      font-size: 28px;
+      color: #ffd700;
+      margin-bottom: 15px;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+      font-weight: 900;
+    }
+    
+    .timer-container {
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 18px;
+      padding: 25px;
+      margin: 18px 0;
+      border: 3px solid #4ecdc4; /* Color verde por defecto */
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.3s ease; /* Transición suave para el borde */
+    }
+    
+    .timer {
+      font-size: 52px;
+      font-weight: 900; /* Más grueso que bold */
+      color: #4ecdc4; /* Color verde por defecto */
+      text-shadow: 0 0 22px rgba(78, 205, 196, 0.8); /* Sombra verde por defecto */
+      font-family: 'Courier New', monospace;
+      letter-spacing: 4px;
+      position: relative;
+      transform: scaleX(1.2) scaleY(1.2);
+      z-index: 2;
+      transition: color 0.3s ease, text-shadow 0.3s ease; /* Transiciones suaves */
+      /* Remover webkit-text-stroke fijo para permitir colores dinámicos */
+    }
+    
+    /* Estilo específico para cuando el timer está finalizado */
+    .timer.finalizado {
+      font-size: 16px;
+      transform: scaleX(1) scaleY(1) !important;
+      letter-spacing: 2px !important;
+    }
+    
+    /* Indicadores de tiempo invisible */
+    .tiempo-indicador {
+      position: absolute;
+      font-size: 28px;
+      font-weight: 900;
+      font-family: 'Courier New', monospace;
+      z-index: 1;
+      opacity: 0;
+      pointer-events: none;
+      text-shadow: 0 0 12px currentColor;
+    }
+    
+    .tiempo-positivo {
+      right: 20px;
+      color: #4caf50;
+      font-weight: 900;
+      animation: tiempo-positivo-animacion 2.5s ease-out forwards;
+    }
+    
+    /* Estilos para el sistema de tiempo snipe */
+    .mensaje-snipe {
+      animation: aparecerSnipe 0.5s ease-out;
+    }
+    
+    @keyframes aparecerSnipe {
+      0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    
+    @keyframes parpadeoSnipe {
+      0%, 100% { 
+        opacity: 1; 
+        text-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+      }
+      50% { 
+        opacity: 0.7; 
+        text-shadow: 0 0 30px rgba(255, 107, 107, 1);
+      }
+    }
+    
+    .ranking.finalizado {
+      border: 3px solid #ffd700 !important;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.6) !important;
+    }
+    
+    .donador.finalizado {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%) !important;
+      border-color: rgba(255, 215, 0, 0.3) !important;
+    }
+    
+    .tiempo-negativo {
+      left: 20px;
+      color: #f44336;
+      font-weight: 900;
+      animation: tiempo-negativo-animacion 2.5s ease-out forwards;
+    }
+    
+    @keyframes tiempo-positivo-animacion {
+      0% {
+        opacity: 0;
+        transform: translateX(20px) scale(0.8);
+      }
+      20% {
+        opacity: 1;
+        transform: translateX(0) scale(1.1);
+      }
+      80% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(-20px) scale(0.8);
+      }
+    }
+    
+    @keyframes tiempo-negativo-animacion {
+      0% {
+        opacity: 0;
+        transform: translateX(-20px) scale(0.8);
+      }
+      20% {
+        opacity: 1;
+        transform: translateX(0) scale(1.1);
+      }
+      80% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(20px) scale(0.8);
+      }
+    }
+    
+    .status {
+      display:none;
+      font-size: 20px;
+      color: #4ecdc4;
+      margin-top: 10px;
+      font-weight: 900;
+    }
+    
+    /* Top 10 Ranking */
+    .ranking-container {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      /* padding: 15px; */
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    
+    .ranking-title {
+      display: none;
+      text-align: center;
+      font-size: 20px;
+      color: #ffd700;
+      margin-bottom: 20px;
+      font-weight: 900;
+    }
+    
+         .ranking {
+       display: flex;
+       flex-direction: column;
+       gap: 16px;
+       flex: 1;
+       overflow-y: hidden;
+       overflow-x: hidden;
+       padding: 16px;
+       min-height: 0;
+     }
+    
+         .ranking.finalizado {
+       grid-template-columns: 1fr;
+       max-height: none;
+       gap: 20px;
+       width: 100%;
+       overflow: visible;
+       padding: 0;
+       flex: 1;
+       justify-content: center;
+     }
+    
+         .donador {
+       background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+       border: 2px solid rgba(255, 255, 255, 0.2);
+       border-radius: 16px;
+       padding: 20px;
+       display: flex;
+       align-items: center;
+       gap: 18px;
+       transition: all 0.5s ease;
+       position: relative;
+       overflow: visible;
+       box-sizing: border-box;
+     }
+    
+    .donador:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      border-color: rgba(255, 215, 0, 0.5);
+    }
+    
+    .donador.cambio {
+      animation: cambio-posicion 1.2s ease;
+    }
+    
+    .donador.cambio-subida {
+      animation: subida-posicion 1.5s ease;
+    }
+    
+    .donador.cambio-bajada {
+      animation: bajada-posicion 1.5s ease;
+    }
+    
+    @keyframes cambio-posicion {
+      0% { transform: scale(1) rotate(0deg); }
+      25% { transform: scale(1.05) rotate(-1deg); background: rgba(255, 215, 0, 0.3); }
+      50% { transform: scale(1.08) rotate(1deg); background: rgba(255, 215, 0, 0.4); box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); }
+      75% { transform: scale(1.05) rotate(-0.5deg); background: rgba(255, 215, 0, 0.3); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    
+    @keyframes subida-posicion {
+      0% { transform: translateY(0) scale(1); }
+      25% { transform: translateY(-8px) scale(1.03); background: rgba(76, 175, 80, 0.3); border-color: #4caf50; }
+      50% { transform: translateY(-12px) scale(1.06); background: rgba(76, 175, 80, 0.4); box-shadow: 0 0 20px rgba(76, 175, 80, 0.6); }
+      75% { transform: translateY(-6px) scale(1.03); background: rgba(76, 175, 80, 0.3); }
+      100% { transform: translateY(0) scale(1); }
+    }
+    
+    @keyframes bajada-posicion {
+      0% { transform: translateY(0) scale(1); }
+      25% { transform: translateY(8px) scale(1.03); background: rgba(244, 67, 54, 0.3); border-color: #f44336; }
+      50% { transform: translateY(12px) scale(1.06); background: rgba(244, 67, 54, 0.4); box-shadow: 0 0 20px rgba(244, 67, 54, 0.6); }
+      75% { transform: translateY(6px) scale(1.03); background: rgba(244, 67, 54, 0.3); }
+      100% { transform: translateY(0) scale(1); }
+    }
+    
+         .position {
+       width: 48px;
+       height: 48px;
+       border-radius: 50%;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       font-weight: 900;
+       font-size: 20px;
+       flex-shrink: 0;
+       transition: all 0.5s ease;
+     }
+    
+    .position-1 {
+      background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+      color: #000;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+    }
+    
+    .position-2 {
+      background: linear-gradient(135deg, #c0c0c0 0%, #e5e5e5 100%);
+      color: #000;
+      box-shadow: 0 0 10px rgba(192, 192, 192, 0.6);
+    }
+    
+    .position-3 {
+      background: linear-gradient(135deg, #cd7f32 0%, #daa520 100%);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(205, 127, 50, 0.6);
+    }
+    
+    .position-4-10 {
+      background: linear-gradient(135deg, #4a4a4a 0%, #666 100%);
+      color: #fff;
+    }
+    
+         .foto {
+       width: 62px;
+       height: 62px;
+       border-radius: 50%;
+       background-size: cover;
+       background-position: center;
+       border: 4px solid #ffd700;
+       flex-shrink: 0;
+       box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+     }
+    
+    .info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .nombre {
+      font-size: 22px;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 7px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+         .diamantes {
+       font-size: 22px;
+       font-weight: 900;
+       color: #ffd700;
+       display: flex;
+       align-items: center;
+       gap: 6px;
+     }
+     
+     .diamantes .tiktok-coin {
+       width: 24px;
+       height: 24px;
+       flex-shrink: 0;
+     }
+     
+     .diamantes .tiktok-coin svg {
+       width: 100%;
+       height: 100%;
+     }
+    
+    /* Estados especiales para finalización */
+    .ganador {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 215, 0, 0.2) 100%);
+      border: 3px solid #ffd700;
+      animation: ganador-glow 2s infinite;
+      transform: scale(1.02);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    
+         .ganador .foto {
+       border: 4px solid #ffd700;
+       box-shadow: 0 0 28px rgba(255, 215, 0, 0.8);
+       width: 66px;
+       height: 66px;
+       flex-shrink: 0;
+     }
+    
+         .ganador .position {
+       width: 60px;
+       height: 60px;
+       font-size: 24px;
+       box-shadow: 0 0 32px rgba(255, 215, 0, 0.8);
+       flex-shrink: 0;
+     }
+    
+         .ganador .nombre {
+       font-size: 24px;
+       color: #ffd700;
+       text-shadow: 0 0 14px rgba(255, 215, 0, 0.5);
+       white-space: nowrap;
+       overflow: hidden;
+       text-overflow: ellipsis;
+       max-width: 240px;
+     }
+    
+         .ganador .diamantes {
+       font-size: 22px;
+       color: #ffd700;
+       text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+     }
+    
+         .finalizado .donador {
+       padding: 28px 22px;
+       margin-bottom: 18px;
+       width: 100%;
+       max-width: 100%;
+       box-sizing: border-box;
+       overflow: hidden;
+     }
+    
+    .finalizado .donador:nth-child(2) {
+      background: linear-gradient(135deg, rgba(192, 192, 192, 0.2) 0%, rgba(192, 192, 192, 0.1) 100%);
+      border-color: rgba(192, 192, 192, 0.6);
+    }
+    
+    .finalizado .donador:nth-child(3) {
+      background: linear-gradient(135deg, rgba(205, 127, 50, 0.2) 0%, rgba(205, 127, 50, 0.1) 100%);
+      border-color: rgba(205, 127, 50, 0.6);
+    }
+    
+         .finalizado .donador .foto {
+       width: 62px;
+       height: 62px;
+       flex-shrink: 0;
+     }
+    
+         .finalizado .donador .position {
+       width: 52px;
+       height: 52px;
+       font-size: 22px;
+       flex-shrink: 0;
+     }
+    
+         .finalizado .donador .nombre {
+       font-size: 23px;
+       max-width: 260px;
+       white-space: nowrap;
+       overflow: hidden;
+       text-overflow: ellipsis;
+     }
+    
+         .finalizado .donador .diamantes {
+       font-size: 21px;
+     }
+    
+         .ranking.finalizado .donador {
+       margin: 0;
+       gap: 22px;
+     }
+    
+    @keyframes ganador-glow {
+      0%, 100% { 
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+      }
+      50% { 
+        box-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 40px rgba(255, 215, 0, 0.8);
+      }
+    }
+    
+    /* Efectos de partículas para cambios de posición */
+    .particulas {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1000;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .particula {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: #ffd700;
+      border-radius: 50%;
+      animation: particula-vuelo 1s ease-out forwards;
+      box-shadow: 0 0 4px currentColor;
+    }
+    
+    @keyframes particula-vuelo {
+      0% { 
+        transform: translate(0, 0) scale(1); 
+        opacity: 1; 
+      }
+      100% { 
+        transform: translate(var(--x), var(--y)) scale(0); 
+        opacity: 0; 
+      }
+    }
+    
+    /* Efecto de destello */
+    .destello {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, transparent 30%, rgba(255, 215, 0, 0.6) 50%, transparent 70%);
+      animation: destello-efecto 0.8s ease-out;
+      pointer-events: none;
+      z-index: 10;
+      border-radius: 12px;
+    }
+    
+    @keyframes destello-efecto {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    @keyframes flecha-subida {
+      0% { transform: translateX(-50%) translateY(0) scale(0.5); opacity: 0; }
+      50% { transform: translateX(-50%) translateY(-8px) scale(1.1); opacity: 1; }
+      100% { transform: translateX(-50%) translateY(-15px) scale(1); opacity: 0; }
+    }
+    
+    @keyframes flecha-bajada {
+      0% { transform: translateX(-50%) translateY(0) scale(0.5); opacity: 0; }
+      50% { transform: translateX(-50%) translateY(8px) scale(1.1); opacity: 1; }
+      100% { transform: translateX(-50%) translateY(15px) scale(1); opacity: 0; }
+    }
+    
+    /* Scrollbar personalizado */
+    .ranking::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .ranking::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    
+    .ranking::-webkit-scrollbar-thumb {
+      background: rgba(255, 215, 0, 0.5);
+      border-radius: 4px;
+    }
+    
+    .ranking::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 215, 0, 0.7);
+    }
+    
+                  /* Responsive */
+     @media (max-width: 600px) {
+       .widget-container {
+         max-width: 98%;
+         padding: 20px;
+         height: 95vh;
+       }
+       
+       .timer {
+         font-size: 44px;
+       }
+       
+       .ranking {
+         gap: 14px;
+         padding: 14px;
+       }
+       
+       .donador {
+         padding: 18px;
+         gap: 16px;
+       }
+       
+             .position {
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+      }
+       
+       .foto {
+         width: 56px;
+         height: 56px;
+       }
+       
+       .nombre {
+         font-size: 20px;
+       }
+       
+             .diamantes {
+        font-size: 20px;
+      }
+    }
+  </style>
+  <script src="../js/socket.io.min.js"></script>
+</head>
+<body>
+  <div class="widget-container">
+    <!-- Header con Timer -->
+    <div class="header">
+      <div class="title">🎯 SUBASTA EN VIVO</div>
+        <div id="labelminimo" class="nombre timer" style="display:none; color: #a4ffa7; font-size: 22px; font-weight: bold;"></div>
+        <div class="timer-container">
+          <div class="tiempo-indicador tiempo-negativo" id="tiempoNegativo"></div>
+          <div style="display: flex; flex-direction: column;">
+            <div class="timer" id="timer">00:00</div>
+            <div id="delaytimercontainer" style="display: none; flex-direction: row; gap: 10px; align-items: center; justify-content: center;">
+              <div style="color: #f8cb00; font-weight: 900; font-size: 20px;" id="delayTimerLabel">Tiempo por delay de live</div>
+              <div style="font-size: 20px; font-weight: 900;" id="delaytimer">00:00</div>
+            </div>
+          </div>
+          <div class="tiempo-indicador tiempo-positivo" id="tiempoPositivo"></div>
+          <div class="status" id="status">Esperando donaciones para iniciar...</div>
+        </div>
+      </div>
+    
+    <!-- Top 10 Ranking -->
+    <div class="ranking-container">
+      <div class="ranking-title" id="rankingTitle"> TOP 10 DONADORES</div>
+      <div class="ranking" id="ranking">
+        <!-- Los donadores se generarán dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <div>
+    
+  </div>
+  <script>
+    // Sistema de multiidioma para el widget
+    const idiomasWidget = {
+      espanol: {
+        // Estados y mensajes principales
+        esperandoDonaciones: "Esperando donaciones para iniciar...",
+        subastaEnCurso: "Subasta en curso - ¡Envía regalos!",
+        subastaPausada: "Subasta pausada",
+        subastaFinalizada: "¡SUBASTA FINALIZADA!",
+        tiempoPorDelay: "Tiempo por delay de live",
+        finalizado: "FINALIZADO",
+        montminimo: "monto minimo",
+        // Mensajes de snipe/delay
+        tiempoSnipeActivo: "¡TIEMPO POR DELAY ACTIVO!",
+        noDonesMas: "⚠️ SI VES EL TIMER EN 0:00 NO DONES MÁS ⚠️",
+        tiempoSnipeFinalizado: "¡TIEMPO POR DELAY FINALIZADO!",
+        
+        // Mensajes de ganador
+        ganador: "¡GANADOR!",
+        empate: "¡EMPATE!",
+        ambosGanadores: "¡Ambos son ganadores!",
+        felicidades: "¡Felicidades!",
+        seVieneDesempate: "¡Se viene desempate!",
+        
+        // Títulos y etiquetas
+        top10Donadores: "TOP 10 DONADORES",
+        topFinalSubasta: "TOP FINAL - SUBASTA COMPLETADA",
+        podioFinal: "🏆 PODIO FINAL",
+        participantes: "PARTICIPANTES",
+        ticketsTotales: "Tickets Totales",
+        totalParticipantes: "Total de participantes:",
+        
+        // Mensajes de estado
+        esperandoIniciar: "No hay donadores aún. La subasta comenzará cuando se inicie.",
+        esperandoDonaciones: "Esperando donaciones...",
+        sorteoIniciado: "¡Sorteo iniciado! ¡Preparando la ruleta!",
+        sorteoEnCurso: "En Curso",
+        sorteoFinalizado: "Finalizado",
+        sorteoCompletado: "Completado",
+        
+        // Botones
+        iniciar: "🚀 Iniciar",
+        sorteo: "🎲 Sorteo",
+        reiniciar: "🔄 Reiniciar",
+        girando: "🎲 Girando...",
+        
+        // Mensajes de bloqueo
+        subastaFinalizadaNoDonaciones: "🔒 Subasta finalizada - No se aceptan más donaciones",
+        
+        // Otros textos
+        diamantes: ""
+      },
+      
+      ingles: {
+        esperandoDonaciones: "Waiting for donations to start...",
+        subastaEnCurso: "Auction in progress - Send gifts!",
+        subastaPausada: "Auction paused",
+        subastaFinalizada: "AUCTION FINISHED!",
+        tiempoPorDelay: "Time for live delay",
+        finalizado: "FINISHED",
+        montminimo: "minimum amount",
+        tiempoSnipeActivo: "DELAY TIME ACTIVE!",
+        noDonesMas: "⚠️ IF YOU SEE TIMER AT 0:00 DON'T DONATE MORE ⚠️",
+        tiempoSnipeFinalizado: "DELAY TIME FINISHED!",
+        
+        ganador: "WINNER!",
+        empate: "TIE!",
+        ambosGanadores: "Both are winners!",
+        felicidades: "Congratulations!",
+        seVieneDesempate: "Tiebreaker coming!",
+        
+        top10Donadores: "TOP 10 DONORS",
+        topFinalSubasta: "FINAL TOP - AUCTION COMPLETED",
+        podioFinal: "🏆 FINAL PODIUM",
+        participantes: "PARTICIPANTS",
+        ticketsTotales: "Total Tickets",
+        totalParticipantes: "Total participants:",
+        
+        esperandoIniciar: "No donors yet. The auction will start when initiated.",
+        esperandoDonaciones: "Waiting for donations...",
+        sorteoIniciado: "Raffle started! Preparing the wheel!",
+        sorteoEnCurso: "In Progress",
+        sorteoFinalizado: "Finished",
+        sorteoCompletado: "Completed",
+        
+        iniciar: "🚀 Start",
+        sorteo: "🎲 Raffle",
+        reiniciar: "🔄 Reset",
+        girando: "🎲 Spinning...",
+        
+        subastaFinalizadaNoDonaciones: "🔒 Auction finished - No more donations accepted",
+        
+        // Otros textos
+        diamantes: ""
+      },
+      
+      portugues: {
+        esperandoDonaciones: "Aguardando doações para iniciar...",
+        subastaEnCurso: "Leilão em andamento - Envie presentes!",
+        subastaPausada: "Leilão pausado",
+        subastaFinalizada: "LEILÃO FINALIZADO!",
+        tiempoPorDelay: "Tempo para delay ao vivo",
+        finalizado: "FINALIZADO",
+        montminimo: "valor mínimo",
+
+        tiempoSnipeActivo: "TEMPO DE DELAY ATIVO!",
+        noDonesMas: "⚠️ SE VOCÊ VER O TIMER EM 0:00 NÃO DOE MAIS ⚠️",
+        tiempoSnipeFinalizado: "TEMPO DE DELAY FINALIZADO!",
+        
+        ganador: "VENCEDOR!",
+        empate: "EMPATE!",
+        ambosGanadores: "Ambos são vencedores!",
+        felicidades: "Parabéns!",
+        seVieneDesempate: "Desempate chegando!",
+        
+        top10Donadores: "TOP 10 DOADORES",
+        topFinalSubasta: "TOP FINAL - LEILÃO COMPLETADO",
+        podioFinal: "🏆 PODIUM FINAL",
+        participantes: "PARTICIPANTES",
+        ticketsTotales: "Total de Tickets",
+        totalParticipantes: "Total de participantes:",
+        
+        esperandoIniciar: "Nenhum doador ainda. O leilão começará quando iniciado.",
+        esperandoDonaciones: "Aguardando doações...",
+        sorteoIniciado: "Rifa iniciada! Preparando a roleta!",
+        sorteoEnCurso: "Em Andamento",
+        sorteoFinalizado: "Finalizado",
+        sorteoCompletado: "Completado",
+        
+        iniciar: "🚀 Iniciar",
+        sorteo: "🎲 Rifa",
+        reiniciar: "🔄 Resetar",
+        girando: "🎲 Girando...",
+        
+        subastaFinalizadaNoDonaciones: "🔒 Leilão finalizado - Não aceitamos mais doações",
+        
+        // Otros textos
+        diamantes: ""
+      },
+      
+      tagalo: {
+        esperandoDonaciones: "Naghihintay ng mga donasyon para magsimula...",
+        subastaEnCurso: "Subasta na nagaganap - Magpadala ng mga regalo!",
+        subastaPausada: "Subasta na naka-pause",
+        subastaFinalizada: "NATAPOS ANG SUBASTA!",
+        tiempoPorDelay: "Oras para sa live delay",
+        finalizado: "NATAPOS",
+        montminimo: "pinakamababang halaga",
+        
+        tiempoSnipeActivo: "AKTIBO ANG ORAS NG DELAY!",
+        noDonesMas: "⚠️ KUNG NAKIKITA MO ANG TIMER SA 0:00 HUWAG KA NANG MAG-DONATE ⚠️",
+        tiempoSnipeFinalizado: "NATAPOS ANG ORAS NG DELAY!",
+        
+        ganador: "NANALO!",
+        empate: "PATAS!",
+        ambosGanadores: "Pareho silang nanalo!",
+        felicidades: "Binabati kita!",
+        seVieneDesempate: "Darating ang tiebreaker!",
+        
+        top10Donadores: "TOP 10 MGA NAG-DONATE",
+        topFinalSubasta: "FINAL TOP - NATAPOS ANG SUBASTA",
+        podioFinal: "🏆 FINAL PODIUM",
+        participantes: "MGA KASALI",
+        ticketsTotales: "Kabuuang Tickets",
+        totalParticipantes: "Kabuuang mga kasali:",
+        
+        esperandoIniciar: "Walang nag-donate pa. Magsisimula ang subasta kapag na-initiate.",
+        esperandoDonaciones: "Naghihintay ng mga donasyon...",
+        sorteoIniciado: "Nagsimula ang raffle! Inihahanda ang gulong!",
+        sorteoEnCurso: "Nagaganap",
+        sorteoFinalizado: "Natapos",
+        sorteoCompletado: "Nakumpleto",
+        
+        iniciar: "🚀 Simulan",
+        sorteo: "🎲 Raffle",
+        reiniciar: "🔄 I-reset",
+        girando: "🎲 Umiikot...",
+        
+        subastaFinalizadaNoDonaciones: "🔒 Natapos ang subasta - Hindi na tumatanggap ng mga donasyon",
+        
+        // Otros textos
+        diamantes: ""
+      },
+      
+      indonesio: {
+        esperandoDonaciones: "Menunggu donasi untuk memulai...",
+        subastaEnCurso: "Lelang sedang berlangsung - Kirim hadiah!",
+        subastaPausada: "Lelang dijeda",
+        subastaFinalizada: "LELANG SELESAI!",
+        tiempoPorDelay: "Waktu untuk delay live",
+        finalizado: "SELESAI",
+        montminimo: "jumlah minimum",
+        
+        tiempoSnipeActivo: "WAKTU DELAY AKTIF!",
+        noDonesMas: "⚠️ JIKA ANDA MELIHAT TIMER DI 0:00 JANGAN DONASI LAGI ⚠️",
+        tiempoSnipeFinalizado: "WAKTU DELAY SELESAI!",
+        
+        ganador: "PEMENANG!",
+        empate: "SERI!",
+        ambosGanadores: "Keduanya adalah pemenang!",
+        felicidades: "Selamat!",
+        seVieneDesempate: "Tiebreaker akan datang!",
+        
+        top10Donadores: "TOP 10 DONATUR",
+        topFinalSubasta: "TOP FINAL - LELANG SELESAI",
+        podioFinal: "🏆 PODIUM FINAL",
+        participantes: "PESERTA",
+        ticketsTotales: "Total Tiket",
+        totalParticipantes: "Total peserta:",
+        
+        esperandoIniciar: "Belum ada donatur. Lelang akan dimulai saat diinisiasi.",
+        esperandoDonaciones: "Menunggu donasi...",
+        sorteoIniciado: "Raffle dimulai! Menyiapkan roda!",
+        sorteoEnCurso: "Sedang Berlangsung",
+        sorteoFinalizado: "Selesai",
+        sorteoCompletado: "Selesai",
+        
+        iniciar: "🚀 Mulai",
+        sorteo: "🎲 Raffle",
+        reiniciar: "🔄 Reset",
+        girando: "🎲 Berputar...",
+        
+        subastaFinalizadaNoDonaciones: "🔒 Lelang selesai - Tidak menerima donasi lagi",
+        
+        // Otros textos
+        diamantes: ""
+      },
+      
+      vietnamita: {
+        esperandoDonaciones: "Đang chờ quyên góp để bắt đầu...",
+        subastaEnCurso: "Phiên đấu giá đang diễn ra - Gửi quà!",
+        subastaPausada: "Phiên đấu giá tạm dừng",
+        subastaFinalizada: "PHIÊN ĐẤU GIÁ HOÀN THÀNH!",
+        tiempoPorDelay: "Thời gian cho độ trễ trực tiếp",
+        finalizado: "HOÀN THÀNH",
+        montminimo: "số tiền tối thiểu",
+        
+        tiempoSnipeActivo: "THỜI GIAN ĐỘ TRỄ ĐANG HOẠT ĐỘNG!",
+        noDonesMas: "⚠️ NẾU BẠN THẤY TIMER Ở 0:00 ĐỪNG QUYÊN GÓP NỮA ⚠️",
+        tiempoSnipeFinalizado: "THỜI GIAN ĐỘ TRỄ HOÀN THÀNH!",
+        
+        ganador: "NGƯỜI THẮNG!",
+        empate: "HÒA!",
+        ambosGanadores: "Cả hai đều là người thắng!",
+        felicidades: "Chúc mừng!",
+        seVieneDesempate: "Trận đấu quyết định sắp đến!",
+        
+        top10Donadores: "TOP 10 NGƯỜI QUYÊN GÓP",
+        topFinalSubasta: "TOP CUỐI - PHIÊN ĐẤU GIÁ HOÀN THÀNH",
+        podioFinal: "🏆 PODIUM CUỐI",
+        participantes: "NGƯỜI THAM GIA",
+        ticketsTotales: "Tổng Vé",
+        totalParticipantes: "Tổng người tham gia:",
+        
+        esperandoIniciar: "Chưa có người quyên góp. Phiên đấu giá sẽ bắt đầu khi được khởi tạo.",
+        esperandoDonaciones: "Đang chờ quyên góp...",
+        sorteoIniciado: "Xổ số bắt đầu! Đang chuẩn bị bánh xe!",
+        sorteoEnCurso: "Đang Diễn Ra",
+        sorteoFinalizado: "Hoàn Thành",
+        sorteoCompletado: "Hoàn Thành",
+        
+        iniciar: "🚀 Bắt Đầu",
+        sorteo: "🎲 Xổ Số",
+        reiniciar: "🔄 Đặt Lại",
+        girando: "🎲 Đang Quay...",
+        
+        subastaFinalizadaNoDonaciones: "🔒 Phiên đấu giá hoàn thành - Không nhận quyên góp nữa",
+        
+        // Otros textos
+        diamantes: ""
+      },
+
+      italiano:{
+        // Estados y mensajes principales
+        esperandoDonaciones: "In attesa di donazioni per iniziare...",
+        subastaEnCurso: "Asta in corso - Invia regali!",
+        subastaPausada: "Asta in pausa",
+        subastaFinalizada: "ASTA TERMINATA!",
+        tiempoPorDelay: "Tempo per il ritardo live",
+        finalizado: "TERMINATO",
+        montminimo: "importo minimo",
+        // Mensajes de snipe/delay
+        tiempoSnipeActivo: "TEMPO DI RITARDO ATTIVO!",
+        noDonesMas: "⚠️ SE VEDI IL TIMER A 0:00 NON DONARE PIÙ ⚠️",
+        tiempoSnipeFinalizado: "TEMPO DI RITARDO TERMINATO!",
+        
+        // Mensajes de ganador
+        ganador: "VINCITORE!",
+        empate: "PAREGGIO!",
+        ambosGanadores: "Entrambi sono vincitori!",
+        felicidades: "Congratulazioni!",
+        seVieneDesempate: "Sta arrivando lo spareggio!",
+        
+        // Títulos y etiquetas
+        top10Donadores: "TOP 10 DONATORI",
+        topFinalSubasta: "TOP FINALE - ASTA COMPLETATA",
+        podioFinal: "🏆 PODIO FINALE",
+        participantes: "PARTECIPANTI",
+        ticketsTotales: "Biglietti Totali",
+        totalParticipantes: "Totale partecipanti:",
+        
+        // Mensajes de estado
+        esperandoIniciar: "Non ci sono ancora donatori. L'asta inizierà quando verrà avviata.",
+        esperandoDonaciones: "In attesa di donazioni...",
+        sorteoIniciado: "Estrazione iniziata! Preparando la ruota!",
+        sorteoEnCurso: "In Corso",
+        sorteoFinalizado: "Terminato",
+        sorteoCompletado: "Completato",
+        
+        // Botones
+        iniciar: "🚀 Inizia",
+        sorteo: "🎲 Estrazione",
+        reiniciar: "🔄 Reimposta",
+        girando: "🎲 Girando...",
+        
+        // Mensajes de bloqueo
+        subastaFinalizadaNoDonaciones: "🔒 Asta terminata - Non si accettano più donazioni",
+        
+        // Otros textos
+        diamantes: ""
+      }
+    };
+    
+    // Función para obtener el idioma actual
+    function obtenerIdioma() {
+      return window.lenguageWidget || 'espanol';
+    }
+    
+    // Función para obtener texto traducido
+    function t(key) {
+      const idioma = obtenerIdioma();
+      return idiomasWidget[idioma]?.[key] || idiomasWidget.espanol[key] || key;
+    }
+    
+    // Datos de prueba para simular donadores
+    let donadores = [
+      
+    ];
+
+    // Timer de prueba
+    let tiempoRestante = 0; // Cambiado de 60 a 0
+    let tiempoRestanteSnipe = 0; // Cambiado de 60 a 0
+    let minimoDonacion = 0;
+    let timerInterval;
+    let timerIntervalSnipe;
+    let subastaFinalizada = false;
+    let subastaFinalizadaSnipe = false;
+    let subastaIniciada = false; // Nueva variable para controlar si la subasta ha sido iniciada
+    let pausado = false; // Variable para controlar si el timer está pausado
+    let modificandoTiempo = false; // Variable para evitar que el timer interfiera cuando se modifica tiempo manualmente
+    let tiempoSnipe = 0; // Variable para controlar el tiempo de snipe
+    let snipeActivo = false; // Variable para controlar si el tiempo snipe está activo
+    
+    // Variables para el sistema de tiempo snipe mejorado
+    let topFinalizado = false; // Indica si el top final ya se mostró
+    let tiempoSnipeConfigurado = 5000; // 5 segundos por defecto
+    let donacionesBloqueadas = false; // Indica si se pueden aceptar más donaciones
+
+                   // Inicialización
+    document.addEventListener('DOMContentLoaded', () => {
+      inicializarRanking();
+      inicializarSocket();      
+      // Marcar widget como inicializado
+      widgetInicializado = true;
+    });
+
+    window.addEventListener("message", (event) => {
+      console.log("Mensaje recibido de la página principal:", event.data);
+      event.source.postMessage("frameloaded", event.origin);
+    });
+    
+    var SOCKET_IDENTIFICADOR = "wsSubasta1";
+    var socket = null;
+    function inicializarSocket() {
+    socket = io('http://localhost:8081', {
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
+    socket.on('connect', () => {
+        socket.emit('newIdentifica', { config:{socketTipo: SOCKET_IDENTIFICADOR} });
+      })
+      // Escuchar el evento 'mensaje' del socket
+      socket.on('mensaje', (valores) => {
+        console.log('📩 Mensaje recibido por socket:', valores);
+        // Verificar si la subasta ya ha finalizado (incluyendo snipe)
+        if (subastaFinalizada && subastaFinalizadaSnipe) {
+          console.log('⚠️ Subasta finalizada y snipe finalizado. Ignorando mensaje.');
+          return;
+        }
+
+        // Procesar el mensaje de donación para el top de donadores
+        if (valores && valores.funcion === 'mensaje' && valores.diamantes) {
+          console.log('🎁 Procesando donación recibida:', valores);
+          procesarDonacion(valores);
+        } else {
+          console.log('ℹ️ Mensaje recibido no es una donación válida o no contiene diamantes:', valores);
+        }
+      })
+      socket.on('iniciarSubasta', (valores) => {
+        console.log("📡 Comando iniciarSubasta recibido:", valores);
+        console.log("🔧 Debug - tiempoSnipe recibido:", valores.tiempoSnipe);
+        console.log("🌍 Debug - idioma recibido:", valores.lenguage);
+        // Configurar idioma del widget
+        if (valores.lenguage) {
+          window.lenguageWidget = valores.lenguage;
+          console.log("🌍 Idioma del widget configurado:", window.lenguageWidget);
+          
+          // Actualizar textos del widget al nuevo idioma
+          actualizarIdiomaWidget();
+        }
+        if (valores.minimo) {
+          if (valores.minimo > 0) {
+            document.getElementById("labelminimo").style.display = "block";
+          } else {
+            document.getElementById("labelminimo").style.display = "none";
+          }
+          document.getElementById("labelminimo").innerText = `${idiomasWidget[obtenerIdioma()].montminimo} ${valores.minimo}`;
+
+        }
+        iniciarSubastaDesdeComando(valores.tiempoInicial || 60, valores.tiempoSnipe || 0, valores.minimo || 0);
+      });
+      socket.on('pausarSubasta', (valores) => {
+        // Solo ejecutar si el widget está inicializado
+        if (widgetInicializado) {
+          // Si no hay valores específicos, hacer toggle automático
+          if (!valores || valores.pausada === undefined) {
+            pausarSubastaDesdeComando(); // Sin parámetros = toggle automático
+          } else {
+            // Si hay valores específicos, usar el valor de pausada
+            const debePausar = valores.pausada === true;
+            const estadoActual = pausado;            
+            // Solo ejecutar si el estado es diferente
+            if (debePausar !== estadoActual) {
+              pausarSubastaDesdeComando(debePausar);
+            }
+          }
+        }
+      });
+      socket.on('finalizarSubasta', (valores) => {
+        console.log('🏁 Comando finalizarSubasta recibido por socket');
+        // Limpiar timer principal
+        clearInterval(timerInterval);
+        // Marcar subasta como finalizada
+        subastaFinalizada = true;
+        subastaFinalizadaSnipe = true;
+        mostrarTopFinal();
+      });
+      socket.on('modificarpuntos', (valores) => {
+        console.log('🔄 Comando modificarpuntos recibido por socket:', valores);
+        // donadores.forEach(donador => {
+        //   if (donador.id === valores.userId){
+        //     donador.total_diamantes += valores.puntos;
+        //   }
+        // })
+        const {
+          uniqueId,           // ID único del usuario
+          diamondCount,       // Cantidad de diamantes de esta donación
+          repeatCount,        // Cantidad de veces que se repite el regalo
+        } = valores;
+        console.log(valores)
+        procesarDonacion(valores)
+      });
+      socket.on('restart', (valores) => {
+        restartWidget();
+      });
+      socket.on('modificarTiempo', (valores) => {
+        if (subastaFinalizada && subastaFinalizadaSnipe) {
+          console.log('⚠️ Subasta finalizada y snipe finalizado. Ignorando mensaje.');
+          return;
+        }
+        modificarTiempoDesdeComando(valores.segundos, valores.tipo);
+      });
+      // widget:wsWiner-operar-mas-1 
+      socket.on('operar', (valores) => {
+        if (subastaFinalizada && subastaFinalizadaSnipe) {
+          console.log('⚠️ Subasta finalizada y snipe finalizado. Ignorando mensaje.');
+          return;
+        }
+        
+        var monto = valores.valor;        
+        // Procesar el monto para sumar o restar tiempo
+        if (monto > 0) {
+          // Monto positivo: sumar tiempo
+          modificarTiempoDesdeComando(monto, 'sumar');
+        } else if (monto < 0) {
+          // Monto negativo: restar tiempo
+          const segundosRestar = Math.abs(monto);
+          modificarTiempoDesdeComando(segundosRestar, 'restar');
+        }
+      })
+
+    }
+
+    function restartWidget() {
+      // console.log('🔄 Reiniciando widget...');
+      // Aquí puedes agregar la lógica de reinicio del widget, como recargar la página o resetear estados
+      // Por ahora, simplemente recargar la página para simular un reinicio completo
+      location.reload();
+    }
+
+    function inicializarRanking() {
+      // No inicializar si la subasta ya está finalizada
+      if (subastaFinalizada && subastaFinalizadaSnipe) {
+        console.log('🔧 Debug - inicializarRanking - Subasta ya finalizada, saltando inicialización');
+        return;
+      }
+      actualizarRanking();
+    }
+
+    function actualizarRanking() {
+      const rankingElement = document.getElementById('ranking');
+      const rankingTitle = document.getElementById('rankingTitle');
+      
+      // Asegurar que no se muestre el podio final si la subasta no está finalizada
+      console.log('🔧 Debug - actualizarRanking - subastaFinalizada:', subastaFinalizada, 'subastaFinalizadaSnipe:', subastaFinalizadaSnipe);
+      if (subastaFinalizada && subastaFinalizadaSnipe) {
+        console.log('🔧 Debug - actualizarRanking - Mostrando top 3 final');
+        // Mostrar solo top 3 con énfasis especial
+        mostrarTop3Final();
+        return;
+      }
+      
+      // Si no hay donadores y la subasta no ha iniciado, mostrar mensaje
+      if (donadores.length === 0 && !subastaIniciada) {
+        rankingElement.className = 'ranking';
+        rankingTitle.textContent = t('top10Donadores');
+        rankingElement.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">' + t('esperandoIniciar') + '</div>';
+        return;
+      }
+      
+      // Si no hay donadores pero la subasta está en curso, mostrar mensaje
+      if (donadores.length === 0 && subastaIniciada) {
+        rankingElement.className = 'ranking';
+        rankingTitle.textContent = t('top10Donadores');
+        rankingElement.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">' + t('esperandoDonaciones') + '</div>';
+        return;
+      }
+      
+      // Mostrar top 10 normal
+      console.log('🔧 Debug - actualizarRanking - Mostrando top 10 normal con', donadores.length, 'donadores');
+      rankingElement.className = 'ranking';
+      rankingTitle.textContent = t('top10Donadores');
+      rankingElement.innerHTML = '';
+
+      donadores.forEach((donador, index) => {
+        if (donador.total_diamantes < minimoDonacion) {
+          return; // Saltar donadores que no alcanzan el mínimo
+        }
+        const donadorElement = document.createElement('div');
+        donadorElement.className = 'donador';
+        donadorElement.dataset.id = donador.id;
+
+        const positionClass = getPositionClass(index + 1);
+        
+        donadorElement.innerHTML = `
+          <div class="position ${positionClass}">${index + 1}</div>
+          <div class="foto" style="background-image: url('${donador.userfoto}')"></div>
+          <div class="info">
+            <div class="nombre">${donador.usernick}</div>
+            <div class="diamantes">
+              <div class="tiktok-coin">
+                <svg font-size="30px" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"><g clip-path="url(#Icon_Color-Tiktok_Coin_svg__a)"><path d="M48 24a24 24 0 1 1-48 0 24 24 0 0 1 48 0Z" fill="#FFB84D"></path><path d="M47 24a23 23 0 1 1-46 0 23 23 0 0 1 46 0Z" fill="#FFDE55"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A300"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A80F"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#E88B00"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#F09207"></path><path d="M34.74 17.77v5.86c-2.06 0-4.05-.44-5.81-1.55v7.2a7.79 7.79 0 0 1-7.84 7.75 7.79 7.79 0 0 1-7.8-8.35 7.79 7.79 0 0 1 9.19-8.24v6c-.47-.13-.9-.26-1.39-.26a3.14 3.14 0 0 0-3.09 2.5 3.14 3.14 0 0 0 3.1 2.5c1.74 0 3.14-1.4 3.14-3.11V12.03h4.69a5.6 5.6 0 0 0 5.81 5.74Z" fill="#F09207"></path><path d="M34.34 18.18a5.78 5.78 0 0 1-5.82-5.74h-3.87v15.63c0 1.94-1.6 3.5-3.56 3.5a3.53 3.53 0 0 1-3.55-3.5 3.53 3.53 0 0 1 4.52-3.38v-3.9a7.38 7.38 0 0 0-8.4 7.28 7.38 7.38 0 0 0 7.43 7.34c4.1 0 7.43-3.29 7.43-7.34v-7.98a9.73 9.73 0 0 0 5.82 1.92v-3.83Z" fill="#fff"></path></g><defs><clipPath id="Icon_Color-Tiktok_Coin_svg__a"><path fill="#fff" d="M0 0h48v48H0z"></path></clipPath></defs></svg>
+              </div>
+              ${donador.total_diamantes}
+            </div>
+          </div>
+        `;
+
+        rankingElement.appendChild(donadorElement);
+      });
+    }
+
+    function mostrarTop3Final() {
+      const rankingElement = document.getElementById('ranking');
+      const rankingTitle = document.getElementById('rankingTitle');
+      
+      // Cambiar a layout de 1 columna y estilo finalizado
+      rankingElement.className = 'ranking finalizado';
+              rankingTitle.textContent = '🏆 ' + t('podioFinal');
+      rankingElement.innerHTML = '';
+
+      // Mostrar solo los 3 primeros
+      const top3 = donadores.slice(0, 3);
+      
+      top3.forEach((donador, index) => {
+        const donadorElement = document.createElement('div');
+        donadorElement.className = 'donador';
+        
+        if (index === 0) {
+          donadorElement.classList.add('ganador');
+        }
+        
+        const positionClass = getPositionClass(index + 1);
+        
+        donadorElement.innerHTML = `
+          <div class="position ${positionClass}">${index + 1}</div>
+          <div class="foto" style="background-image: url('${donador.userfoto}')"></div>
+          <div class="info">
+            <div class="nombre">${donador.usernick}</div>
+            <div class="diamantes">
+              <div class="tiktok-coin">
+                <svg font-size="30px" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em"><g clip-path="url(#Icon_Color-Tiktok_Coin_svg__a)"><path d="M48 24a24 24 0 1 1-48 0 24 24 0 0 1 48 0Z" fill="#FFB84D"></path><path d="M47 24a23 23 0 1 1-46 0 23 23 0 0 1 46 0Z" fill="#FFDE55"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A300"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A80F"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#E88B00"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#F09207"></path><path d="M34.74 17.77v5.86c-2.06 0-4.05-.44-5.81-1.55v7.2a7.79 7.79 0 0 1-7.84 7.75 7.79 7.79 0 0 1-7.8-8.35 7.79 7.79 0 0 1 9.19-8.24v6c-.47-.13-.9-.26-1.39-.26a3.14 3.14 0 0 0-3.09 2.5 3.14 3.14 0 0 0 3.1 2.5c1.74 0 3.14-1.4 3.14-3.11V12.03h4.69a5.6 5.6 0 0 0 5.81 5.74Z" fill="#F09207"></path><path d="M34.34 18.18a5.78 5.78 0 0 1-5.82-5.74h-3.87v15.63c0 1.94-1.6 3.5-3.56 3.5a3.53 3.53 0 0 1-3.55-3.5 3.53 3.53 0 0 1 4.52-3.38v-3.9a7.38 7.38 0 0 0-8.4 7.28 7.38 7.38 0 0 0 7.43 7.34c4.1 0 7.43-3.29 7.43-7.34v-7.98a9.73 9.73 0 0 0 5.82 1.92v-3.83Z" fill="#fff"></path></g><defs><clipPath id="Icon_Color-Tiktok_Coin_svg__a"><path fill="#fff" d="M0 0h48v48H0z"></path></clipPath></defs></svg>
+              </div>
+              ${donador.total_diamantes}
+            </div>
+          </div>
+        `;
+
+        rankingElement.appendChild(donadorElement);
+      });
+    }
+
+    function getPositionClass(position) {
+      if (position === 1) return 'position-1';
+      if (position === 2) return 'position-2';
+      if (position === 3) return 'position-3';
+      return 'position-4-10';
+    }
+
+    function iniciarTimer() {
+      // Limpiar cualquier intervalo anterior para evitar múltiples timers
+      if (timerInterval) {
+        // console.log('🧹 Limpiando timer anterior existente');
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      timerInterval = setInterval(() => {
+        // No decrementar si está pausado, finalizado o modificando tiempo
+        if (pausado || subastaFinalizada || modificandoTiempo) {
+          return;
+        }
+        
+        tiempoRestante--;
+        actualizarTimer();
+        
+        if (tiempoRestante <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          finalizarSubasta();
+        }
+      }, 1000);
+      
+      // Aplicar color inicial verde al timer y borde del contenedor
+      const timerElement = document.getElementById('timer');
+      if (timerElement) {
+        timerElement.style.color = '#4ecdc4';
+        timerElement.style.textShadow = '0 0 20px rgba(78, 205, 196, 0.8)';
+        timerElement.style.animation = 'none';
+        timerElement.style.fontSize = '52px'; // Restaurar tamaño normal del timer
+        timerElement.classList.remove('finalizado'); // Remover clase de finalizado
+        
+        // Aplicar borde verde al contenedor
+        const timerContainer = timerElement.closest('.timer-container');
+        if (timerContainer) {
+          timerContainer.style.borderColor = '#4ecdc4';
+        }
+      }
+    }
+
+    function actualizarTimer() {      
+      // Verificar si el timer principal llegó a 0 y activar snipe (solo si tiempoSnipe > 0)
+      if (tiempoRestante <= 0 && !snipeActivo && !subastaFinalizada) {
+        console.log(`🔧 Debug - Timer llegó a 0, tiempoSnipe: ${tiempoSnipe}s`);
+        if (tiempoSnipe > 0) {
+          console.log('🔧 Debug - Activando tiempo de snipe...');
+          activarTiempoSnipe();
+        } else {
+          console.log('🔧 Debug - No hay tiempo de snipe, finalizando directamente...');
+          // Si no hay tiempo de snipe, finalizar directamente
+          finalizarSubasta();
+        }
+        return;
+      }
+      
+      const minutos = Math.floor(tiempoRestante / 60);
+      const segundos = tiempoRestante % 60;
+      const tiempoFormateado = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+      const timerElement = document.getElementById('timer');
+      if (timerElement) {
+        timerElement.textContent = tiempoFormateado;        
+        // Cambiar color según tiempo restante con sombras dinámicas
+        if (tiempoRestante <= 10) {
+          // ROJO: Tiempo crítico (≤10 segundos)
+          timerElement.style.color = '#ff0000';
+          timerElement.style.textShadow = '0 0 20px rgba(255, 0, 0, 0.8)';
+          timerElement.style.animation = 'pulse 1s infinite';
+          
+          // Actualizar borde del contenedor
+          const timerContainer = timerElement.closest('.timer-container');
+          if (timerContainer) {
+            timerContainer.style.borderColor = '#ff0000';
+          }
+        } else if (tiempoRestante <= 20) {
+          // AMARILLO: Tiempo de advertencia (11-20 segundos)
+          timerElement.style.color = '#f8cb00';
+          timerElement.style.textShadow = '0 0 20px rgba(248, 203, 0, 0.8)';
+          timerElement.style.animation = 'none';
+          
+          // Actualizar borde del contenedor
+          const timerContainer = timerElement.closest('.timer-container');
+          if (timerContainer) {
+            timerContainer.style.borderColor = '#f8cb00';
+          }
+        } else {
+          // VERDE: Tiempo normal (>20 segundos)
+          timerElement.style.color = '#4ecdc4';
+          timerElement.style.textShadow = '0 0 20px rgba(78, 205, 196, 0.8)';
+          timerElement.style.animation = 'none';
+          
+          // Actualizar borde del contenedor
+          const timerContainer = timerElement.closest('.timer-container');
+          if (timerContainer) {
+            timerContainer.style.borderColor = '#4ecdc4';
+          }
+        }
+      } else {
+        console.error('❌ Elemento timer no encontrado en el DOM');
+      }
+    }
+
+    function actualizarTimerSnipe() {
+      console.log(`⏱️ actualizarTimerSnipe() - tiempoRestanteSnipe: ${tiempoRestanteSnipe}s`);
+      
+      // Formatear tiempo para mostrar solo segundos (ya que el snipe es corto)
+      const tiempoFormateado = `${tiempoRestanteSnipe}s`;
+      
+      console.log(`⏱️ Tiempo snipe formateado: ${tiempoFormateado}`);
+      
+      // ACTUALIZAR SOLO EL DELAY TIMER CON EL TIEMPO DE SNIPE
+      const delayTimerElement = document.getElementById('delaytimer');
+      if (delayTimerElement) {
+        delayTimerElement.textContent = tiempoFormateado;
+        console.log(`✅ Delay timer actualizado: ${tiempoFormateado}`);
+        
+        // Aplicar colores y animaciones según el tiempo restante
+        if (tiempoRestanteSnipe <= 2) {
+          delayTimerElement.style.color = '#ff0000';
+          delayTimerElement.style.animation = 'pulse 0.5s infinite';
+        } else if (tiempoRestanteSnipe <= 3) {
+          delayTimerElement.style.color = '#ff6b6b';
+          delayTimerElement.style.animation = 'parpadeoSnipe 1s infinite';
+        } else {
+          delayTimerElement.style.color = '#ff6b6b';
+          delayTimerElement.style.animation = 'parpadeoSnipe 1s infinite';
+        }
+      } else {
+        console.error('❌ Elemento delaytimer no encontrado en el DOM');
+      }
+      
+      // EL TIMER PRINCIPAL SE MANTIENE EN 0:00
+      const timerElement = document.getElementById('timer');
+      if (timerElement) {
+        // Mantener el timer principal en 0:00 con estilo de advertencia
+        timerElement.textContent = '0:00';
+        timerElement.style.color = '#ff0000';
+        timerElement.style.fontWeight = 'bold';
+        timerElement.style.textShadow = '0 0 20px rgba(255, 0, 0, 0.8)';
+        timerElement.style.animation = 'parpadeoSnipe 1s infinite';
+      }
+    }
+
+    function iniciarTimerSnipe() {
+      console.log('🚀 iniciarTimerSnipe() llamado');
+      console.log(`🔧 Estado inicial - tiempoRestanteSnipe: ${tiempoRestanteSnipe}s`);
+      
+      // Limpiar cualquier intervalo anterior para evitar múltiples timers
+      if (timerIntervalSnipe) {
+        console.log('🧹 Limpiando timer anterior existente');
+        clearInterval(timerIntervalSnipe);
+        timerIntervalSnipe = null;
+      }
+      
+      // Verificar que el tiempo sea válido
+      if (tiempoRestanteSnipe <= 0) {
+        console.error('❌ Tiempo de snipe inválido:', tiempoRestanteSnipe);
+        console.log('🔧 Intentando corregir tiempo de snipe...');
+        
+        // Intentar corregir el tiempo
+        if (tiempoSnipe > 0) {
+          tiempoRestanteSnipe = tiempoSnipe;
+          console.log(`🔧 Tiempo corregido a: ${tiempoRestanteSnipe}s`);
+        } else {
+          tiempoRestanteSnipe = 5;
+          console.log(`🔧 Tiempo establecido por defecto: ${tiempoRestanteSnipe}s`);
+        }
+      }
+      
+      console.log(`⏱️ Creando nuevo timer de snipe con ${tiempoRestanteSnipe}s`);
+      timerIntervalSnipe = setInterval(() => {
+        // No decrementar si está finalizado
+        if (subastaFinalizadaSnipe) {
+          console.log('⏹️ Timer de snipe detenido - subasta finalizada');
+          return;
+        }
+        
+        // Decrementar tiempo
+        tiempoRestanteSnipe--;
+        console.log(`⏰ Timer snipe: ${tiempoRestanteSnipe}s restantes`);
+        
+        // Actualizar display
+        actualizarTimerSnipe();
+        
+        // Verificar si terminó
+        if (tiempoRestanteSnipe <= 0) {
+          console.log('🏁 Timer de snipe terminado, finalizando subasta...');
+          clearInterval(timerIntervalSnipe);
+          timerIntervalSnipe = null;
+          finalizarSubastaSnipe();
+        }
+      }, 1000);
+      
+      console.log('✅ Timer de snipe iniciado correctamente');
+    }
+
+    function finalizarSubastaSnipe(){
+      console.log('🏁 ¡TIEMPO SNIPE FINALIZADO!');
+      
+      subastaFinalizadaSnipe = true;
+      snipeActivo = false;
+      topFinalizado = true;
+      donacionesBloqueadas = true;
+      
+      // Ocultar mensaje de snipe
+      const mensajeSnipe = document.getElementById('mensajeSnipe');
+      if (mensajeSnipe) {
+        mensajeSnipe.remove();
+      }
+      
+      // OCULTAR EL DELAY TIMER CUANDO TERMINE EL SNIPE
+      const delayTimerContainer = document.getElementById('delaytimercontainer');
+      if (delayTimerContainer) {
+        delayTimerContainer.style.display = 'none';
+      }
+      
+      // Restaurar timer principal
+      const timerElement = document.getElementById('timer');
+      if (timerElement) {
+        timerElement.style.color = '#ffd700';
+        timerElement.style.fontWeight = '900';
+        timerElement.style.textShadow = 'none';
+        timerElement.style.animation = 'none';
+        timerElement.style.fontSize = '40px'; // Reducir tamaño para que quepa "FINALIZADO"
+        timerElement.textContent = '🏁 FINALIZADO';
+        timerElement.classList.add('finalizado'); // Agregar clase CSS para estilos específicos
+      }
+      
+      // Cambiar estado final
+      const statusElement = document.getElementById('status');
+      if (statusElement) {
+        statusElement.textContent = '🏁 ¡SUBASTA FINALIZADA! Top final mostrado';
+        statusElement.style.color = '#ffd700';
+        statusElement.style.fontWeight = 'bold';
+        statusElement.style.background = 'rgba(255, 215, 0, 0.1)';
+        statusElement.style.borderColor = 'rgba(255, 215, 0, 0.5)';
+      }
+      
+      // Mostrar top final
+      mostrarTopFinal();
+      
+            console.log('✅ Subasta completamente finalizada');
+    }
+    
+    // Función para mostrar el top final
+    function mostrarTopFinal() {
+      // Protección contra ejecuciones múltiples
+      if (window.topFinalEnProceso) {
+        console.log('⚠️ mostrarTopFinal ya está en proceso, saltando ejecución');
+        return;
+      }
+      
+      window.topFinalEnProceso = true;
+      console.log('🏆 Mostrando top final de la subasta - Stack trace:', new Error().stack);
+      
+      // Ordenar participantes finales por total de diamantes
+      const topFinal = [...donadores].sort((a, b) => b.total_diamantes - a.total_diamantes);
+      // socket.emit('ganador', topFinal[0]); // Enviar top final al servidor
+
+      socket.emit("conexion_widgets", {
+        widget: SOCKET_IDENTIFICADOR,
+        comando: "registrar_ganador",
+        valores: topFinal[0]
+      });
+
+      // Aplicar clase de finalización al ranking
+      const rankingElement = document.getElementById('ranking');
+      if (rankingElement) {
+        rankingElement.classList.add('finalizado');
+        rankingElement.style.border = '3px solid #ffd700';
+        rankingElement.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.6)';
+      }
+      
+      // Actualizar título del ranking
+      const rankingTitle = document.getElementById('rankingTitle');
+      if (rankingTitle) {
+        rankingTitle.innerHTML = '🏆 ' + t('topFinalSubasta');
+        rankingTitle.style.color = '#ffd700';
+        rankingTitle.style.fontWeight = 'bold';
+      }
+      
+      // Primero mostrar animación del ganador o empate
+      if (topFinal.length > 0) {
+        console.log('🔧 Debug - mostrarTopFinal - Verificando si hay empate...');
+        
+        // Verificar si hay empate entre el primer y segundo puesto
+        console.log('🔧 Debug - mostrarTopFinal - Verificando empate:');
+        console.log('  - Primer puesto:', topFinal[0].usernick, 'con', topFinal[0].total_diamantes, 'diamantes');
+        if (topFinal.length > 1) {
+          console.log('  - Segundo puesto:', topFinal[1].usernick, 'con', topFinal[1].total_diamantes, 'diamantes');
+          console.log('  - ¿Empate?', topFinal[0].total_diamantes === topFinal[1].total_diamantes);
+        }
+        
+        if (topFinal.length > 1 && topFinal[0].total_diamantes === topFinal[1].total_diamantes) {
+          console.log('🔧 Debug - mostrarTopFinal - ¡EMPATE detectado! Mostrando animación de empate');
+          mostrarAnimacionEmpate([topFinal[0], topFinal[1]], () => {
+            // Después de la animación, mostrar el top 3
+            mostrarTopConAnimacion(topFinal);
+            // Bloquear interfaz para más donaciones
+            bloquearInterfaz();
+          });
+        } else {
+          console.log('🔧 Debug - mostrarTopFinal - No hay empate, mostrando animación del ganador');
+          mostrarAnimacionGanador(topFinal[0], () => {
+            // Después de la animación, mostrar el top 3
+            mostrarTopConAnimacion(topFinal);
+            // Bloquear interfaz para más donaciones
+            bloquearInterfaz();
+          });
+        }
+      } else {
+        // Si no hay ganadores, mostrar top directamente
+        console.log('🔧 Debug - mostrarTopFinal - No hay ganadores, mostrando top directamente');
+        mostrarTopConAnimacion(topFinal);
+        // Bloquear interfaz para más donaciones
+        bloquearInterfaz();
+      }
+      
+      console.log('✅ Top final mostrado correctamente');
+      
+      // Liberar bandera de control
+      setTimeout(() => {
+        window.topFinalEnProceso = false;
+        console.log('🔧 Debug - mostrarTopFinal - Bandera liberada');
+      }, 2000);
+    }
+    
+    // Función para mostrar animación del ganador
+    function mostrarAnimacionGanador(ganador, callback) {
+      console.log('🎉 Mostrando animación del ganador:', ganador.usernick);
+      
+      // Guardar información del ganador para actualización de idioma
+      window.ganadorActual = ganador;
+      
+      // Crear contenedor de animación
+      const animacionContainer = document.createElement('div');
+      animacionContainer.id = 'animacionGanador';
+      animacionContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        animation: aparecerFondo 0.5s ease-out;
+        overflow: hidden;
+      `;
+      
+      // Crear contenido de la animación
+      const contenidoAnimacion = document.createElement('div');
+      contenidoAnimacion.style.cssText = `
+        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        color: #000;
+        padding: 40px;
+        border-radius: 25px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: aparecerGanador 0.8s ease-out;
+        max-width: 500px;
+        width: 90%;
+        position: relative;
+        z-index: 10;
+      `;
+      
+      contenidoAnimacion.innerHTML = `
+        <div style="font-size: 48px; font-weight: 900; margin-bottom: 20px; animation: bounce 1s infinite;">🏆</div>
+        <div style="font-size: 32px; font-weight: 900; margin-bottom: 15px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+          ${t('ganador')}
+        </div>
+        <div style="font-size: 24px; font-weight: 900; margin-bottom: 20px; color: #8B0000;">
+          ${ganador.usernick}
+        </div>
+        <div style="font-size: 20px; font-weight: 900; margin-bottom: 15px; background: rgba(255,255,255,0.3); padding: 10px; border-radius: 10px;">
+          <svg style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px;" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#Icon_Color-Tiktok_Coin_svg__a)"><path d="M48 24a24 24 0 1 1-48 0 24 24 0 0 1 48 0Z" fill="#FFB84D"></path><path d="M47 24a23 23 0 1 1-46 0 23 23 0 0 1 46 0Z" fill="#FFDE55"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A300"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A80F"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#E88B00"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#F09207"></path><path d="M34.74 17.77v5.86c-2.06 0-4.05-.44-5.81-1.55v7.2a7.79 7.79 0 0 1-7.84 7.75 7.79 7.79 0 0 1-7.8-8.35 7.79 7.79 0 0 1 9.19-8.24v6c-.47-.13-.9-.26-1.39-.26a3.14 3.14 0 0 0-3.09 2.5 3.14 3.14 0 0 0 3.1 2.5c1.74 0 3.14-1.4 3.14-3.11V12.03h4.69a5.6 5.6 0 0 0 5.81 5.74Z" fill="#F09207"></path><path d="M34.34 18.18a5.78 5.78 0 0 1-5.82-5.74h-3.87v15.63c0 1.94-1.6 3.5-3.56 3.5a3.53 3.53 0 0 1-3.55-3.5 3.53 3.53 0 0 1 4.52-3.38v-3.9a7.38 7.38 0 0 0-8.4 7.28 7.38 7.38 0 0 0 7.43 7.34c4.1 0 7.43-3.29 7.43-7.34v-7.98a9.73 9.73 0 0 0 5.82 1.92v-3.83Z" fill="#fff"></path></g><defs><clipPath id="Icon_Color-Tiktok_Coin_svg__a"><path fill="#fff" d="M0 0h48v48H0z"></path></clipPath></defs></svg> ${ganador.total_diamantes} ${t('diamantes')}
+        </div>
+        <div style="font-size: 20px; font-weight: 900; opacity: 0.8; margin-top: 20px;">
+          🎉 ${t('felicidades')} 🎉
+        </div>
+      `;
+      
+      animacionContainer.appendChild(contenidoAnimacion);
+      document.body.appendChild(animacionContainer);
+      
+      // Iniciar efectos de celebración
+      iniciarEfectosCelebracion(animacionContainer);
+      
+      // Actualizar idioma de la animación si es necesario
+      if (window.lenguageWidget && window.lenguageWidget !== 'espanol') {
+        setTimeout(() => {
+          actualizarIdiomaWidget();
+        }, 100);
+      }
+      
+      // Después de 3 segundos, desaparecer la animación
+      setTimeout(() => {
+        console.log('⏰ Animación del ganador terminada, desapareciendo...');
+        
+        // Detener efectos de celebración
+        detenerEfectosCelebracion();
+        
+        // Agregar animación de salida
+        animacionContainer.style.animation = 'desaparecerFondo 0.5s ease-in forwards';
+        contenidoAnimacion.style.animation = 'desaparecerGanador 0.5s ease-in forwards';
+        
+        // Remover después de la animación
+        setTimeout(() => {
+          if (animacionContainer.parentNode) {
+            animacionContainer.parentNode.removeChild(animacionContainer);
+          }
+          console.log('✅ Animación del ganador removida');
+          
+          // Ejecutar callback para mostrar el top
+          if (callback) callback();
+        }, 500);
+      }, 3000);
+    }
+    
+    // Función para mostrar animación de empate
+    function mostrarAnimacionEmpate(empatados, callback) {
+      console.log('🤝 Mostrando animación de empate entre:', empatados.map(e => e.usernick).join(' y '));
+      
+      // Guardar información de los empatados para actualización de idioma
+      window.empatadosActuales = empatados;
+      
+      // Crear contenedor de animación
+      const animacionContainer = document.createElement('div');
+      animacionContainer.id = 'animacionEmpate';
+      animacionContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        animation: aparecerFondo 0.5s ease-out;
+        overflow: hidden;
+      `;
+      
+      // Crear contenido de la animación
+      const contenidoAnimacion = document.createElement('div');
+      contenidoAnimacion.style.cssText = `
+        background: linear-gradient(135deg, #9c27b0 0%, #673ab7 100%);
+        color: #fff;
+        padding: 40px;
+        border-radius: 25px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: aparecerGanador 0.8s ease-out;
+        max-width: 600px;
+        width: 90%;
+        position: relative;
+        z-index: 10;
+      `;
+      
+      contenidoAnimacion.innerHTML = `
+        <div style="font-size: 48px; font-weight: 900; margin-bottom: 20px; animation: bounce 1s infinite;">🤝</div>
+        <div style="font-size: 32px; font-weight: 900; margin-bottom: 15px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+          ${t('empate')}
+        </div>
+        <div style="font-size: 24px; font-weight: 900; margin-bottom: 20px; color: #ffd700;">
+          ${empatados.map(e => e.usernick).join(' y ')}
+        </div>
+        <div style="font-size: 20px; font-weight: 900; margin-bottom: 15px; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 10px;">
+          <svg style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px;" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#Icon_Color-Tiktok_Coin_svg__a)"><path d="M48 24a24 24 0 1 1-48 0 24 24 0 0 1 48 0Z" fill="#FFB84D"></path><path d="M47 24a23 23 0 1 1-46 0 23 23 0 0 1 46 0Z" fill="#FFDE55"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A300"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 0 1 36 0Z" fill="#F7A80F"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#E88B00"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#F09207"></path><path d="M34.74 17.77v5.86c-2.06 0-4.05-.44-5.81-1.55v7.2a7.79 7.79 0 0 1-7.84 7.75 7.79 7.79 0 0 1-7.8-8.35 7.79 7.79 0 0 1 9.19-8.24v6c-.47-.13-.9-.26-1.39-.26a3.14 3.14 0 0 0-3.09 2.5 3.14 3.14 0 0 0 3.1 2.5c1.74 0 3.14-1.4 3.14-3.11V12.03h4.69a5.6 5.6 0 0 0 5.81 5.74Z" fill="#F09207"></path><path d="M34.34 18.18a5.78 5.78 0 0 1-5.82-5.74h-3.87v15.63c0 1.94-1.6 3.5-3.56 3.5a3.53 3.53 0 0 1-3.55-3.5 3.53 3.53 0 0 1 4.52-3.38v-3.9a7.38 7.38 0 0 0-8.4 7.28 7.38 7.38 0 0 0 7.43 7.34c4.1 0 7.43-3.29 7.43-7.34v-7.98a9.73 9.73 0 0 0 5.82 1.92v-3.83Z" fill="#fff"></path></g><defs><clipPath id="Icon_Color-Tiktok_Coin_svg__a"><path fill="#fff" d="M0 0h48v48H0z"></path></clipPath></defs></svg>
+          ${empatados[0].total_diamantes} diamantes cada uno
+        </div>
+        <div style="font-size: 20px; font-weight: 900; opacity: 0.8; margin-top: 20px;">
+          🎉 ${t('seVieneDesempate')} 🎉
+        </div>
+      `;
+      
+      animacionContainer.appendChild(contenidoAnimacion);
+      document.body.appendChild(animacionContainer);
+      
+      // Iniciar efectos de celebración
+      iniciarEfectosCelebracion(animacionContainer);
+      
+      // Actualizar idioma de la animación si es necesario
+      if (window.lenguageWidget && window.lenguageWidget !== 'espanol') {
+        setTimeout(() => {
+          actualizarIdiomaWidget();
+        }, 100);
+      }
+      
+      // Después de 4 segundos, desaparecer la animación (un poco más que el ganador individual)
+      setTimeout(() => {
+        console.log('⏰ Animación de empate terminada, desapareciendo...');
+        
+        // Detener efectos de celebración
+        detenerEfectosCelebracion();
+        
+        // Agregar animación de salida
+        animacionContainer.style.animation = 'desaparecerFondo 0.5s ease-in forwards';
+        contenidoAnimacion.style.animation = 'desaparecerGanador 0.5s ease-in forwards';
+        
+        // Remover después de la animación
+        setTimeout(() => {
+          if (animacionContainer.parentNode) {
+            animacionContainer.parentNode.removeChild(animacionContainer);
+          }
+          console.log('✅ Animación de empate removida');
+          
+          // Ejecutar callback
+          if (callback) callback();
+        }, 500);
+      }, 4000);
+    }
+    
+    // Variables para efectos de celebración
+    let confetiInterval;
+    let serpentinasInterval;
+    let estrellasInterval;
+    
+    // Función para iniciar efectos de celebración
+    function iniciarEfectosCelebracion(container) {
+      console.log('🎊 Iniciando efectos de celebración...');
+      
+      // Iniciar confeti
+      confetiInterval = setInterval(() => {
+        crearConfeti(container);
+      }, 100);
+      
+      // Iniciar serpentinas
+      serpentinasInterval = setInterval(() => {
+        crearSerpentina(container);
+      }, 200);
+      
+      // Iniciar estrellas brillantes
+      estrellasInterval = setInterval(() => {
+        crearEstrella(container);
+      }, 300);
+    }
+    
+    // Función para detener efectos de celebración
+    function detenerEfectosCelebracion() {
+      console.log('🛑 Deteniendo efectos de celebración...');
+      
+      if (confetiInterval) clearInterval(confetiInterval);
+      if (serpentinasInterval) clearInterval(serpentinasInterval);
+      if (estrellasInterval) clearInterval(estrellasInterval);
+    }
+    
+    // Función para crear confeti
+    function crearConfeti(container) {
+      const confeti = document.createElement('div');
+      const colores = ['#ff6b6b', '#4ecdc4', '#ffd700', '#9c27b0', '#ff9800', '#e91e63', '#2196f3'];
+      const color = colores[Math.floor(Math.random() * colores.length)];
+      
+      confeti.style.cssText = `
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: ${color};
+        left: ${Math.random() * 100}%;
+        top: -10px;
+        z-index: 5;
+        animation: confetiCaida 3s linear forwards;
+        border-radius: 2px;
+        box-shadow: 0 0 6px ${color};
+      `;
+      
+      container.appendChild(confeti);
+      
+      // Remover confeti después de la animación
+      setTimeout(() => {
+        if (confeti.parentNode) {
+          confeti.parentNode.removeChild(confeti);
+        }
+      }, 3000);
+    }
+    
+    // Función para crear serpentinas
+    function crearSerpentina(container) {
+      const serpentina = document.createElement('div');
+      const colores = ['#ffd700', '#ff6b6b', '#4ecdc4', '#9c27b0'];
+      const color = colores[Math.floor(Math.random() * colores.length)];
+      const lado = Math.random() > 0.5 ? 'left' : 'right';
+      
+      serpentina.style.cssText = `
+        position: absolute;
+        width: 3px;
+        height: ${Math.random() * 100 + 50}px;
+        background: linear-gradient(to bottom, ${color}, transparent);
+        ${lado}: ${Math.random() * 100}%;
+        top: -100px;
+        z-index: 5;
+        animation: serpentinaCaida 4s ease-in forwards;
+        transform: rotate(${Math.random() * 360}deg);
+        box-shadow: 0 0 8px ${color};
+      `;
+      
+      container.appendChild(serpentina);
+      
+      // Remover serpentina después de la animación
+      setTimeout(() => {
+        if (serpentina.parentNode) {
+          serpentina.parentNode.removeChild(serpentina);
+        }
+      }, 4000);
+    }
+    
+    // Función para crear estrellas brillantes
+    function crearEstrella(container) {
+      const estrella = document.createElement('div');
+      const posX = Math.random() * 100;
+      const posY = Math.random() * 100;
+      
+      estrella.innerHTML = '⭐';
+      estrella.style.cssText = `
+        position: absolute;
+        font-size: ${Math.random() * 20 + 15}px;
+        left: ${posX}%;
+        top: ${posY}%;
+        z-index: 5;
+        animation: estrellaBrillo 2s ease-in-out infinite;
+        filter: drop-shadow(0 0 10px #ffd700);
+      `;
+      
+      container.appendChild(estrella);
+      
+      // Remover estrella después de un tiempo
+      setTimeout(() => {
+        if (estrella.parentNode) {
+          estrella.parentNode.removeChild(estrella);
+        }
+      }, 4000);
+    }
+    
+    // Función para mostrar top con animación
+    function mostrarTopConAnimacion(topFinal) {
+      // Protección contra ejecuciones múltiples
+      if (window.topConAnimacionEnProceso) {
+        console.log('⚠️ mostrarTopConAnimacion ya está en proceso, saltando ejecución');
+        return;
+      }
+      
+      window.topConAnimacionEnProceso = true;
+      console.log('🔧 Debug - mostrarTopConAnimacion - Iniciando con', topFinal.length, 'donadores - Stack trace:', new Error().stack);
+      
+      const rankingElement = document.getElementById('ranking');
+      if (!rankingElement) {
+        window.topConAnimacionEnProceso = false;
+        return;
+      }
+      
+      // Limpiar ranking anterior
+      console.log('🔧 Debug - mostrarTopConAnimacion - Limpiando ranking anterior');
+      rankingElement.innerHTML = '';      
+      // Mostrar solo top 3 con animación
+      const top3 = topFinal.slice(0, 3);
+      console.log('🔧 Debug - mostrarTopConAnimacion - Mostrando top 3:', top3.map(d => d.usernick));
+      top3.forEach((donador, index) => {
+        setTimeout(() => {
+          const donadorElement = crearElementoDonador(donador, index + 1);
+          donadorElement.style.opacity = '0';
+          donadorElement.style.transform = 'translateY(20px)';
+          rankingElement.appendChild(donadorElement);
+          console.log(`🔧 Debug - mostrarTopConAnimacion - Agregado elemento ${index + 1} para ${donador.usernick}`);
+          
+          // Animar entrada
+          setTimeout(() => {
+            donadorElement.style.transition = 'all 0.5s ease';
+            donadorElement.style.opacity = '1';
+            donadorElement.style.transform = 'translateY(0)';
+          }, 100);
+        }, index * 300); // Aumentar delay entre cada entrada
+      });
+      
+      // Si hay más de 3 participantes, mostrar mensaje adicional
+      if (topFinal.length > 3) {
+        setTimeout(() => {
+          const mensajeAdicional = document.createElement('div');
+          mensajeAdicional.style.cssText = `
+            text-align: center;
+            color: #ccc;
+            font-size: 20px;
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            opacity: 0;
+            animation: aparecerMensaje 1s ease-out 0.5s forwards;
+          `;
+          mensajeAdicional.innerHTML = `
+            <span style="color: #ffd700; font-weight: 900;">📊</span> 
+            <span style="font-weight: 900;">${t('totalParticipantes')} ${topFinal.length}</span>
+          `;
+          rankingElement.appendChild(mensajeAdicional);
+        }, 1200);
+      }
+      
+      // Liberar bandera de control
+      setTimeout(() => {
+        window.topConAnimacionEnProceso = false;
+        console.log('🔧 Debug - mostrarTopConAnimacion - Bandera liberada');
+      }, 1500);
+    }
+    
+    // Función para crear elemento de donador
+    function crearElementoDonador(donador, posicion) {
+      const donadorElement = document.createElement('div');
+      donadorElement.className = 'donador finalizado';
+      donadorElement.dataset.id = donador.id;
+      
+      const esTop3 = posicion <= 3;
+      const colorPosicion = posicion === 1 ? '#ffd700' : posicion === 2 ? '#c0c0c0' : posicion === 3 ? '#cd7f32' : '#4ecdc4';
+      
+      donadorElement.innerHTML = `
+        <div class="posicion" style="background: ${colorPosicion}; color: white; font-weight: 900; font-size: 20px; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+          ${posicion}
+        </div>
+        <div class="foto" style="background-image: url('${donador.userfoto}')"></div>
+        <div class="info">
+          <div class="nombre" style="font-weight: ${esTop3 ? '900' : 'normal'}; color: ${esTop3 ? colorPosicion : '#fff'};">
+            ${donador.usernick}
+          </div>
+          <div class="diamantes" style="color: ${esTop3 ? colorPosicion : '#ffd700'}; font-weight: ${esTop3 ? '900' : 'normal'};">
+            <svg style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px;" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#Icon_Color-Tiktok_Coin_svg__a)"><path d="M48 24a24 24 0 1 1-48 0 24 24 0 0 1 48 0Z" fill="#FFB84D"></path><path d="M47 24a23 23 0 1 1-46 0 23 23 0 0 1 46 0Z" fill="#FFDE55"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A300"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A80F"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#E88B00"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#F09207"></path><path d="M34.74 17.77v5.86c-2.06 0-4.05-.44-5.81-1.55v7.2a7.79 7.79 0 0 1-7.84 7.75 7.79 7.79 0 0 1-7.8-8.35 7.79 7.79 0 0 1 9.19-8.24v6c-.47-.13-.9-.26-1.39-.26a3.14 3.14 0 0 0-3.09 2.5 3.14 3.14 0 0 0 3.1 2.5c1.74 0 3.14-1.4 3.14-3.11V12.03h4.69a5.6 5.6 0 0 0 5.81 5.74Z" fill="#F09207"></path><path d="M34.34 18.18a5.78 5.78 0 0 1-5.82-5.74h-3.87v15.63c0 1.94-1.6 3.5-3.56 3.5a3.53 3.53 0 0 1-3.55-3.5 3.53 3.53 0 0 1 4.52-3.38v-3.9a7.38 7.38 0 0 0-8.4 7.28 7.38 7.38 0 0 0 7.43 7.34c4.1 0 7.43-3.29 7.43-7.34v-7.98a9.73 9.73 0 0 0 5.82 1.92v-3.83Z" fill="#fff"></path></g><defs><clipPath id="Icon_Color-Tiktok_Coin_svg__a"><path fill="#fff" d="M0 0h48v48H0z"></path></clipPath></defs></svg> 
+            ${donador.total_diamantes}
+          </div>
+        </div>
+      `;
+      
+      return donadorElement;
+    }
+    
+    // Función para bloquear la interfaz
+    function bloquearInterfaz() {
+      // Bloquear botones de control
+      const botonesControl = document.querySelectorAll('.btn-control');
+      botonesControl.forEach(boton => {
+        boton.disabled = true;
+        boton.style.opacity = '0.5';
+        boton.style.cursor = 'not-allowed';
+      });
+      
+      // Mostrar mensaje de bloqueo
+      const mensajeBloqueo = document.createElement('div');
+      mensajeBloqueo.id = 'mensajeBloqueo';
+      mensajeBloqueo.style.cssText = `
+        display:none;
+        background: rgba(255, 0, 0, 0.1);
+        border: 2px solid rgba(255, 0, 0, 0.5);
+        color: #ff6b6b;
+        padding: 10px;
+        border-radius: 10px;
+        text-align: center;
+        font-weight: 900;
+        font-size: 20px;
+        margin: 10px 0;
+      `;
+      mensajeBloqueo.textContent = t('subastaFinalizadaNoDonaciones');
+      
+      const headerElement = document.querySelector('.header');
+      if (headerElement) {
+        headerElement.parentNode.insertBefore(mensajeBloqueo, headerElement.nextSibling);
+      }
+    }
+    
+    function finalizarSubasta() {
+      subastaFinalizada = true;
+      console.log("🔧 Debug - tiempoSnipe en finalizarSubasta:", tiempoSnipe);
+      
+      // Si hay tiempo de snipe configurado, activar el sistema de snipe
+      if (tiempoSnipe != 0){
+        console.log('🔥 Activando sistema de snipe desde finalizarSubasta');
+        
+        // Configurar el tiempo de snipe
+        tiempoSnipeConfigurado = tiempoSnipe * 1000; // Convertir segundos a milisegundos
+                
+        // Activar el tiempo snipe usando la nueva función
+        activarTiempoSnipe();
+      } else {
+        console.log('🏁 No hay tiempo de snipe, mostrando ganadores directamente');
+        subastaFinalizadaSnipe = true; // Marcar como finalizada también para evitar duplicaciones
+        console.log('🔧 Debug - subastaFinalizadaSnipe marcada como true');
+        mostrarGanadoresDespuesDelay();
+      }
+    }
+
+    function mostrarGanadoresDespuesDelay() {
+      console.log('🏆 mostrarGanadoresDespuesDelay() llamado - Sin tiempo de snipe');
+      
+      // Actualizar estado 
+      document.getElementById('status').textContent = '🏆 ' + t('subastaFinalizada');
+      document.getElementById('status').style.color = '#ffd700';
+      document.getElementById('status').style.fontWeight = '900';
+      
+              // Cambiar el timer a FINALIZADO
+        const timerElement = document.getElementById('timer');
+        if (timerElement) {
+          timerElement.textContent = '🏁 ' + t('finalizado');
+          timerElement.style.color = '#ffd700';
+          timerElement.style.animation = 'none';
+          timerElement.style.fontSize = '40px'; // Usar el mismo tamaño que configuraste
+          timerElement.classList.add('finalizado'); // Agregar clase CSS para estilos específicos
+        }
+      
+      // Mostrar top final con animación completa (igual que cuando hay snipe)
+      mostrarTopFinal();
+    }
+    
+    // Funciones para crear efectos visuales
+    function crearEfectosCambio(elemento) {
+      // Crear destello
+      const destello = document.createElement('div');
+      destello.className = 'destello';
+      elemento.appendChild(destello);
+      
+      // Crear partículas
+      crearParticulas(elemento, 6, '#ffd700');
+      
+      // Remover destello después de la animación
+      setTimeout(() => {
+        if (destello.parentNode) {
+          destello.parentNode.removeChild(destello);
+        }
+      }, 800);
+    }
+    
+    function crearEfectosSubida(elemento) {
+      // Crear destello verde
+      const destello = document.createElement('div');
+      destello.className = 'destello';
+      destello.style.background = 'linear-gradient(45deg, transparent 30%, rgba(76, 175, 80, 0.6) 50%, transparent 70%)';
+      elemento.appendChild(destello);
+      
+      // Crear partículas verdes
+      crearParticulas(elemento, 10, '#4caf50');
+      
+             // Efecto de flecha hacia arriba (dentro del contenedor)
+      const flecha = document.createElement('div');
+      flecha.innerHTML = '⬆️';
+      flecha.style.cssText = `
+        position: absolute;
+        top: 3px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 20px;
+        animation: flecha-subida 1.5s ease-out;
+        z-index: 1000;
+        color: #4caf50;
+        text-shadow: 0 0 8px rgba(76, 175, 80, 0.8);
+      `;
+      elemento.appendChild(flecha);
+      
+      // Remover elementos después de la animación
+      setTimeout(() => {
+        if (destello.parentNode) destello.parentNode.removeChild(destello);
+        if (flecha.parentNode) flecha.parentNode.removeChild(flecha);
+      }, 1500);
+    }
+    
+    function crearEfectosBajada(elemento) {
+      // Crear destello rojo
+      const destello = document.createElement('div');
+      destello.className = 'destello';
+      destello.style.background = 'linear-gradient(45deg, transparent 30%, rgba(244, 67, 54, 0.6) 50%, transparent 70%)';
+      elemento.appendChild(destello);
+      
+      // Crear partículas rojas
+      crearParticulas(elemento, 10, '#f44336');
+      
+             // Efecto de flecha hacia abajo (dentro del contenedor)
+      const flecha = document.createElement('div');
+      flecha.innerHTML = '⬇️';
+      flecha.style.cssText = `
+        position: absolute;
+        bottom: 3px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 20px;
+        animation: flecha-bajada 1.5s ease-out;
+        z-index: 1000;
+        color: #f44336;
+        text-shadow: 0 0 8px rgba(244, 67, 54, 0.8);
+      `;
+      elemento.appendChild(flecha);
+      
+      // Remover elementos después de la animación
+      setTimeout(() => {
+        if (destello.parentNode) destello.parentNode.removeChild(destello);
+        if (flecha.parentNode) flecha.parentNode.removeChild(flecha);
+      }, 1500);
+    }
+    
+    function crearParticulas(elemento, cantidad, color) {
+      const contenedorParticulas = document.createElement('div');
+      contenedorParticulas.className = 'particulas';
+      
+      elemento.appendChild(contenedorParticulas);
+      
+      for (let i = 0; i < cantidad; i++) {
+        const particula = document.createElement('div');
+        particula.className = 'particula';
+        particula.style.cssText = `
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 3px;
+          height: 3px;
+          background: ${color};
+          border-radius: 50%;
+          box-shadow: 0 0 4px ${color};
+        `;
+        
+        // Dirección aleatoria para cada partícula (reducida para evitar desbordamiento)
+        const angulo = (Math.PI * 2 * i) / cantidad;
+        const distancia = 30 + Math.random() * 20;
+        const x = Math.cos(angulo) * distancia;
+        const y = Math.sin(angulo) * distancia;
+        
+        particula.style.setProperty('--x', `${x}px`);
+        particula.style.setProperty('--y', `${y}px`);
+        
+        contenedorParticulas.appendChild(particula);
+      }
+      
+      // Remover contenedor de partículas después de la animación
+      setTimeout(() => {
+        if (contenedorParticulas.parentNode) {
+          contenedorParticulas.parentNode.removeChild(contenedorParticulas);
+        }
+      }, 1000);
+    }
+
+    // Agregar estilos CSS para las animaciones adicionales
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
+      
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      
+      @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+      }
+      
+      @keyframes ganador-celebracion {
+        0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+        50% { transform: translate(-50%, -50%) scale(1.1); }
+        100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      }
+      
+      @keyframes ganador-salida {
+        from { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        to { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+      }
+      
+      @keyframes notificacion-entrada {
+        from { 
+          transform: translateX(100%); 
+          opacity: 0; 
+        }
+        to { 
+          transform: translateX(0); 
+          opacity: 1; 
+        }
+      }
+      
+      @keyframes notificacion-salida {
+        from { 
+          transform: translateX(0); 
+          opacity: 1; 
+        }
+        to { 
+          transform: translateX(100%); 
+          opacity: 0; 
+        }
+      }
+      
+      /* Animaciones para el ganador */
+      @keyframes aparecerFondo {
+        from { 
+          opacity: 0; 
+        }
+        to { 
+          opacity: 1; 
+        }
+      }
+      
+      @keyframes desaparecerFondo {
+        from { 
+          opacity: 1; 
+        }
+        to { 
+          opacity: 0; 
+        }
+      }
+      
+      @keyframes aparecerGanador {
+        0% { 
+          opacity: 0; 
+          transform: scale(0.3) rotate(-10deg); 
+        }
+        50% { 
+          opacity: 1; 
+          transform: scale(1.1) rotate(5deg); 
+        }
+        100% { 
+          opacity: 1; 
+          transform: scale(1) rotate(0deg); 
+        }
+      }
+      
+      @keyframes desaparecerGanador {
+        0% { 
+          opacity: 1; 
+          transform: scale(1) rotate(0deg); 
+        }
+        100% { 
+          opacity: 0; 
+          transform: scale(0.3) rotate(10deg); 
+        }
+      }
+      
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { 
+          transform: translateY(0); 
+        }
+        40% { 
+          transform: translateY(-10px); 
+        }
+        60% { 
+          transform: translateY(-5px); 
+        }
+      }
+      
+      @keyframes aparecerMensaje {
+        from { 
+          opacity: 0; 
+          transform: translateY(10px); 
+        }
+        to { 
+          opacity: 1; 
+          transform: translateY(0); 
+        }
+      }
+      
+      /* Animaciones para efectos de celebración */
+      @keyframes confetiCaida {
+        0% {
+          transform: translateY(-10px) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(100vh) rotate(720deg);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes serpentinaCaida {
+        0% {
+          transform: translateY(-100px) rotate(0deg);
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.8;
+        }
+        100% {
+          transform: translateY(100vh) rotate(360deg);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes estrellaBrillo {
+        0%, 100% {
+          opacity: 0.6;
+          transform: scale(1) rotate(0deg);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.2) rotate(180deg);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+         // Función para mostrar indicador de tiempo positivo
+    function mostrarTiempoPositivo(segundos) {
+      // console.log(`🔍 DEBUG mostrarTiempoPositivo: Tiempo antes: ${tiempoRestante}, Sumando: ${segundos}`);
+      
+      // Marcar que se está modificando el tiempo
+      modificandoTiempo = true;
+      
+      const indicador = document.getElementById('tiempoPositivo');
+      indicador.textContent = `+${segundos}`;
+      indicador.style.animation = 'none';
+      indicador.offsetHeight; // Trigger reflow
+      indicador.style.animation = 'tiempo-positivo-animacion 2.5s ease-out forwards';
+      
+      // Pausar temporalmente el timer para evitar interferencias
+      const timerActivo = timerInterval;
+      if (timerActivo) {
+        clearInterval(timerActivo);
+        timerInterval = null; // Importante: limpiar la referencia
+      }
+      
+      // Aplicar el tiempo al timer
+      tiempoRestante += segundos;
+      // console.log(`🔍 DEBUG mostrarTiempoPositivo: Tiempo después: ${tiempoRestante}`);
+      
+      actualizarTimer();
+      
+      // Reanudar el timer después de un breve delay
+      setTimeout(() => {
+        if (!pausado && !subastaFinalizada && !timerInterval && !subastaFinalizadaSnipe) {
+          // Solo iniciar el timer si no hay uno activo
+          iniciarTimer();
+        }
+        // Marcar que ya no se está modificando el tiempo
+        modificandoTiempo = false;
+      }, 100);
+      
+      // Limpiar después de la animación
+      setTimeout(() => {
+        indicador.textContent = '';
+      }, 2500);
+    }
+    
+    // Función para mostrar indicador de tiempo negativo
+    function mostrarTiempoNegativo(segundos) {
+      // console.log(`🔍 DEBUG mostrarTiempoNegativo: Tiempo antes: ${tiempoRestante}, Restando: ${segundos}`);
+      
+      // Marcar que se está modificando el tiempo
+      modificandoTiempo = true;
+      
+      const indicador = document.getElementById('tiempoNegativo');
+      indicador.textContent = `-${segundos}`;
+      indicador.style.animation = 'none';
+      indicador.offsetHeight; // Trigger reflow
+      indicador.style.animation = 'tiempo-negativo-animacion 2.5s ease-out forwards';
+      
+      // Pausar temporalmente el timer para evitar interferencias
+      const timerActivo = timerInterval;
+      if (timerActivo) {
+        clearInterval(timerActivo);
+        timerInterval = null; // Importante: limpiar la referencia
+      }
+      
+      // Aplicar el tiempo al timer
+      tiempoRestante = Math.max(0, tiempoRestante - segundos);
+      // console.log(`🔍 DEBUG mostrarTiempoNegativo: Tiempo después: ${tiempoRestante}`);
+      
+      actualizarTimer();
+      
+      // Reanudar el timer después de un breve delay
+      setTimeout(() => {
+        if (!pausado && !subastaFinalizada && !timerInterval) {
+          // Solo iniciar el timer si no hay uno activo
+          iniciarTimer();
+        }
+        // Marcar que ya no se está modificando el tiempo
+        modificandoTiempo = false;
+      }, 100);
+      
+      // Limpiar después de la animación
+      setTimeout(() => {
+        indicador.textContent = '';
+      }, 2500);
+    }
+    
+    // Función para iniciar la subasta desde el comando
+    function iniciarSubastaDesdeComando(tiempoInicial, _tiempoSnipe, _minimoDonacion) {
+      // console.log(`🚀 Iniciando subasta con tiempo inicial: ${tiempoInicial} segundos`);
+      
+      // Resetear estado de pausado
+      pausado = false;
+      tiempoPausado = 0;
+      minimoDonacion = _minimoDonacion || 0;
+      tiempoRestante = tiempoInicial;
+      tiempoSnipe = _tiempoSnipe || 0;
+      tiempoRestanteSnipe = tiempoSnipe;
+      subastaFinalizada = false;
+      subastaFinalizadaSnipe = false;
+      subastaIniciada = true;
+      donacionesBloqueadas = false;
+      topFinalizado = false;
+      
+      console.log(`🔧 Debug - tiempoSnipe configurado: ${tiempoSnipe}s`);
+      console.log(`🔧 Debug - tiempoRestanteSnipe: ${tiempoRestanteSnipe}s`);
+      
+      // Actualizar interfaz
+      actualizarTimer();
+      // Solo actualizar ranking si la subasta no está finalizada
+      if (!subastaFinalizada || !subastaFinalizadaSnipe) {
+        actualizarRanking();
+      } else {
+        console.log('🔧 Debug - iniciarSubastaDesdeComando - Subasta finalizada, saltando actualizarRanking');
+      }
+      
+      const statusElement = document.getElementById('status');
+      const timerElement = document.getElementById('timer');
+      
+      if (statusElement) {
+        statusElement.textContent = t('subastaEnCurso');
+        statusElement.style.color = '#4ecdc4';
+        statusElement.style.fontWeight = 'normal';
+      }
+      
+      if (timerElement) {
+        timerElement.style.color = '#4ecdc4';
+        timerElement.style.animation = 'none';
+      }
+      
+      // Limpiar cualquier intervalo anterior e iniciar nuevo timer
+      clearInterval(timerInterval);
+      timerInterval = null;
+      
+      iniciarTimer();
+    }
+
+    // Variables para controlar el estado del timer
+    var tiempoPausado = 0; // Variable para guardar el tiempo cuando se pausa
+    var pausandoEnProceso = false; // Variable para evitar ejecuciones múltiples
+    var widgetInicializado = false; // Variable para controlar si el widget ya se inicializó
+    
+         // Función para pausar/reanudar la subasta desde el comando
+    function pausarSubastaDesdeComando(accionEspecifica = null) {
+      // console.log('🎯 pausarSubastaDesdeComando() llamado con parámetro:', accionEspecifica);
+      
+      // Verificar si el widget ya está inicializado
+      if (!widgetInicializado) {
+        // console.log('⚠️ Widget no inicializado, ignorando comando de pausa...');
+        return;
+      }
+      
+      // Debug para rastrear llamadas
+      // debugPausarSubasta();
+      
+      // Protección contra ejecuciones múltiples
+      if (pausandoEnProceso) {
+        // console.log('⚠️ Operación de pausa/reanudación ya en proceso, ignorando...');
+        return;
+      }
+      
+      pausandoEnProceso = true;
+      
+      // Determinar la acción a realizar
+      let debePausar;
+      if (accionEspecifica !== null) {
+        // Si se especifica una acción desde el socket, usarla
+        debePausar = accionEspecifica;
+        // console.log(`🎯 Acción específica recibida: ${debePausar ? 'PAUSAR' : 'REANUDAR'}`);
+      } else {
+        // Si no hay acción específica, hacer toggle
+        debePausar = !pausado;
+        // console.log(`🔄 Acción por toggle: ${debePausar ? 'PAUSAR' : 'REANUDAR'}`);
+      }
+      
+      if (debePausar && !pausado) {        
+        pausado = true;
+        tiempoPausado = tiempoRestante; // Guardar el tiempo actual
+        clearInterval(timerInterval);
+        timerInterval = null;
+        
+        // Cambiar estado visual a pausado
+        const statusElement = document.getElementById('status');
+        const timerElement = document.getElementById('timer');
+        
+        if (statusElement) {
+          statusElement.textContent = t('subastaPausada');
+          statusElement.style.color = '#ff6b6b';
+          statusElement.style.fontWeight = 'bold';
+          // console.log('✅ Status actualizado a "pausada"');
+        }
+        
+        if (timerElement) {
+          timerElement.style.color = '#ff6b6b';
+          timerElement.style.textShadow = '0 0 20px rgba(255, 107, 107, 0.8)';
+          timerElement.style.animation = 'none';
+          
+          // Actualizar borde del contenedor a rojo
+          const timerContainer = timerElement.closest('.timer-container');
+          if (timerContainer) {
+            timerContainer.style.borderColor = '#ff6b6b';
+          }
+          
+          // console.log('✅ Timer actualizado a color rojo (pausado)');
+        }
+        
+        // console.log(`⏸️ Subasta pausada en: ${tiempoPausado} segundos`);
+      } else if (!debePausar && pausado) {        
+        pausado = false;
+        tiempoRestante = tiempoPausado; // Restaurar el tiempo que tenía cuando se pausó
+                
+        // Restaurar estado visual normal
+        const statusElement = document.getElementById('status');
+        const timerElement = document.getElementById('timer');
+        
+        if (statusElement) {
+          statusElement.textContent = 'Subasta en curso - ¡Envía regalos!';
+          statusElement.style.color = '#4ecdc4';
+          statusElement.style.fontWeight = 'normal';
+          // console.log('✅ Status actualizado a "en curso"');
+        }
+        
+        if (timerElement) {
+          timerElement.style.color = '#4ecdc4';
+          timerElement.style.textShadow = '0 0 20px rgba(78, 205, 196, 0.8)';
+          timerElement.style.animation = 'none';
+          
+          // Actualizar borde del contenedor a verde
+          const timerContainer = timerElement.closest('.timer-container');
+          if (timerContainer) {
+            timerContainer.style.borderColor = '#4ecdc4';
+          }          
+        }
+        
+        // Actualizar timer y reiniciar el intervalo
+        actualizarTimer();
+        iniciarTimer(); 
+      }
+      
+      // Liberar la protección después de un breve delay
+      setTimeout(() => {
+        pausandoEnProceso = false;
+      }, 500);
+    }
+
+          // Función para finalizar la subasta desde el comando
+    function finalizarSubastaDesdeComando() {
+      console.log('🏁 finalizarSubastaDesdeComando ejecutado');
+      clearInterval(timerInterval);
+      
+      // Marcar subasta como finalizada
+      subastaFinalizada = true;
+      
+      // Si hay tiempo de snipe configurado, activar el sistema de snipe
+      if (tiempoSnipe > 0) {
+        console.log('🔥 Activando sistema de snipe desde comando');
+        // Configurar el tiempo de snipe
+        tiempoSnipeConfigurado = tiempoSnipe * 1000;
+        // Activar el tiempo snipe usando la nueva función
+        activarTiempoSnipe();
+      } else {
+        console.log('🏁 No hay tiempo de snipe, mostrando ganadores directamente');
+        // Usar la nueva función en lugar de la antigua
+        mostrarTopFinal();
+      }
+    }
+
+    // Función para reiniciar la subasta desde el comando
+    // function reiniciarSubastaDesdeComando(tiempoInicial, tiempoSnipe) {
+    //   // Limpiar estado de la subasta completamente
+    //   subastaFinalizada = false;
+    //   subastaFinalizadaSnipe = false;
+    //   subastaIniciada = true;
+      
+    //   // Resetear estado de pausado y snipe
+    //   pausado = false;
+    //   tiempoPausado = 0;
+    //   snipeActivo = false;
+    //   topFinalizado = false;
+    //   donacionesBloqueadas = false;
+      
+    //   // Configurar tiempo de snipe si se proporciona
+    //   if (tiempoSnipe && tiempoSnipe > 0) {
+    //     tiempoSnipeConfigurado = tiempoSnipe * 1000; // Convertir segundos a milisegundos
+    //     console.log(`⏰ Tiempo de snipe configurado: ${tiempoSnipe} segundos`);
+    //   }
+      
+    //   // Limpiar lista de donadores y reiniciar el ranking
+    //   donadores = [];
+    //   limpiarRanking();
+      
+    //   // Establecer tiempo inicial
+    //   tiempoRestante = 0;
+
+    //   tiempoSnipe = tiempoSnipe || 0;
+    //   // console.log(`🔄 Reiniciando subasta con tiempo inicial: ${tiempoInicial} segundos`);
+      
+    //   // Limpiar estado de la subasta completamente
+    //   subastaFinalizada = false;
+    //   subastaFinalizadaSnipe = false;
+    //   subastaIniciada = true;
+      
+    //   // Resetear estado de pausado
+    //   pausado = false;
+    //   tiempoPausado = 0;
+      
+    //   // Limpiar lista de donadores y reiniciar el ranking
+    //   donadores = [];
+    //   limpiarRanking();
+      
+    //   // Establecer tiempo inicial
+    //   tiempoRestante = 0;
+
+    //   tiempoSnipe = tiempoSnipe || 0;
+      
+    //   // console.log(`⏱️ Tiempo restante establecido: ${tiempoRestante}`);
+      
+    //   // Actualizar interfaz
+    //   actualizarTimer();
+    //   // Solo actualizar ranking si la subasta no está finalizada
+    //   if (!subastaFinalizada || !subastaFinalizadaSnipe) {
+    //     actualizarRanking();
+    //   } else {
+    //     console.log('🔧 Debug - reiniciarSubastaDesdeComando - Subasta finalizada, saltando actualizarRanking');
+    //   }
+      
+    //   // Restaurar estado normal del timer y status
+    //   const statusElement = document.getElementById('status');
+    //   const timerElement = document.getElementById('timer');
+      
+    //           if (statusElement) {
+    //       statusElement.textContent = t('subastaEnCurso');
+    //       statusElement.style.color = '#4ecdc4';
+    //       statusElement.style.fontWeight = 'normal';
+    //     }
+      
+    //   if (timerElement) {
+    //     timerElement.style.color = '#4ecdc4';
+    //     timerElement.style.textShadow = '0 0 20px rgba(78, 205, 196, 0.8)';
+    //     timerElement.style.animation = 'none';
+    //     timerElement.style.fontSize = '52px'; // Restaurar tamaño normal del timer
+    //     timerElement.classList.remove('finalizado'); // Remover clase de finalizado
+        
+    //     // Actualizar borde del contenedor a verde
+    //     const timerContainer = timerElement.closest('.timer-container');
+    //     if (timerContainer) {
+    //       timerContainer.style.borderColor = '#4ecdc4';
+    //     }
+    //   }
+      
+    //   // Limpiar cualquier intervalo anterior e iniciar nuevo timer
+    //   clearInterval(timerInterval);
+    //   timerInterval = null;      
+    // }
+    
+    // Función para actualizar el idioma del widget dinámicamente
+    function actualizarIdiomaWidget() {
+      console.log('🌍 Actualizando idioma del widget a:', obtenerIdioma());
+      
+      // Actualizar delay timer label
+      const delayTimerLabel = document.getElementById('delayTimerLabel');
+      if (delayTimerLabel) {
+        delayTimerLabel.textContent = t('tiempoPorDelay');
+      }
+      
+      // Actualizar status si existe
+      const statusElement = document.getElementById('status');
+      if (statusElement && !subastaFinalizada) {
+        if (subastaIniciada && !pausado) {
+          statusElement.textContent = t('subastaEnCurso');
+        } else if (pausado) {
+          statusElement.textContent = t('subastaPausada');
+        } else {
+          statusElement.textContent = t('esperandoDonaciones');
+        }
+      }
+      
+      // Actualizar título del ranking
+      const rankingTitle = document.getElementById('rankingTitle');
+      if (rankingTitle) {
+        if (subastaFinalizada && subastaFinalizadaSnipe) {
+          rankingTitle.innerHTML = '🏆 ' + t('topFinalSubasta');
+        } else {
+          rankingTitle.textContent = t('top10Donadores');
+        }
+      }
+      
+      console.log('✅ Idioma del widget actualizado');
+      
+      // También actualizar idioma de las animaciones si están activas
+      actualizarIdiomaAnimaciones();
+    }
+    
+    // Función para actualizar el idioma de las animaciones activas
+    function actualizarIdiomaAnimaciones() {
+      console.log('🌍 Actualizando idioma de las animaciones activas');
+      
+      // Actualizar animación del ganador si está activa
+      const animacionGanador = document.getElementById('animacionGanador');
+      if (animacionGanador) {
+        const contenidoAnimacion = animacionGanador.querySelector('div');
+        if (contenidoAnimacion) {
+          contenidoAnimacion.innerHTML = `
+            <div style="font-size: 48px; font-weight: 900; margin-bottom: 20px; animation: bounce 1s infinite;">🏆</div>
+            <div style="font-size: 32px; font-weight: 900; margin-bottom: 15px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+              ${t('ganador')}
+            </div>
+            <div style="font-size: 24px; font-weight: 900; margin-bottom: 20px; color: #8B0000;">
+              ${window.ganadorActual?.usernick || 'Usuario'}
+            </div>
+            <div style="font-size: 20px; font-weight: 900; margin-bottom: 15px; background: rgba(255,255,255,0.3); padding: 10px; border-radius: 10px;">
+              <svg style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px;" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#Icon_Color-Tiktok_Coin_svg__a)"><path d="M48 24a24 24 0 1 1-48 0 24 24 0 0 1 48 0Z" fill="#FFB84D"></path><path d="M47 24a23 23 0 1 1-46 0 23 23 0 0 1 46 0Z" fill="#FFDE55"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A300"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A80F"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#E88B00"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#F09207"></path><path d="M34.74 17.77v5.86c-2.06 0-4.05-.44-5.81-1.55v7.2a7.79 7.79 0 0 1-7.84 7.75 7.79 7.79 0 0 1-7.8-8.35 7.79 7.79 0 0 1 9.19-8.24v6c-.47-.13-.9-.26-1.39-.26a3.14 3.14 0 0 0-3.09 2.5 3.14 3.14 0 0 0 3.1 2.5c1.74 0 3.14-1.4 3.14-3.11V12.03h4.69a5.6 5.6 0 0 0 5.81 5.74Z" fill="#F09207"></path><path d="M34.34 18.18a5.78 5.78 0 0 1-5.82-5.74h-3.87v15.63c0 1.94-1.6 3.5-3.56 3.5a3.53 3.53 0 0 1-3.55-3.5 3.53 3.53 0 0 1 4.52-3.38v-3.9a7.38 7.38 0 0 0-8.4 7.28 7.38 7.38 0 0 0 7.43 7.34c4.1 0 7.43-3.29 7.43-7.34v-7.98a9.73 9.73 0 0 0 5.82 1.92v-3.83Z" fill="#fff"></path></g><defs><clipPath id="Icon_Color-Tiktok_Coin_svg__a"><path fill="#fff" d="M0 0h48v48H0z"></path></clipPath></defs></svg> ${window.ganadorActual?.total_diamantes || 0} ${t('diamantes')}
+            </div>
+            <div style="font-size: 20px; font-weight: 900; opacity: 0.8; margin-top: 20px;">
+              🎉 ${t('felicidades')} 🎉
+            </div>
+          `;
+        }
+      }
+      
+      // Actualizar animación de empate si está activa
+      const animacionEmpate = document.getElementById('animacionEmpate');
+      if (animacionEmpate) {
+        const contenidoAnimacion = animacionEmpate.querySelector('div');
+        if (contenidoAnimacion && window.empatadosActuales) {
+          contenidoAnimacion.innerHTML = `
+            <div style="font-size: 48px; font-weight: 900; margin-bottom: 20px; animation: bounce 1s infinite;">🤝</div>
+            <div style="font-size: 32px; font-weight: 900; margin-bottom: 15px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+              ${t('empate')}
+            </div>
+            <div style="font-size: 24px; font-weight: 900; margin-bottom: 20px; color: #ffd700;">
+              ${window.empatadosActuales.map(e => e.usernick).join(' y ')}
+            </div>
+            <div style="font-size: 20px; font-weight: 900; margin-bottom: 15px; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 10px;">
+              <svg style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px;" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#Icon_Color-Tiktok_Coin_svg__a)"><path d="M48 24a24 24 0 1 1-48 0 24 24 0 0 1 48 0Z" fill="#FFB84D"></path><path d="M47 24a23 23 0 1 1-46 0 23 23 0 0 1 46 0Z" fill="#FFDE55"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A300"></path><path d="M42 24a18 18 0 1 1-36 0 18 18 0 0 1 36 0Z" fill="#F7A80F"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#E88B00"></path><path d="M41.94 25.5a18 18 0 1 0-35.88 0 18 18 0 0 1 35.88 0Z" fill="#F09207"></path><path d="M34.74 17.77v5.86c-2.06 0-4.05-.44-5.81-1.55v7.2a7.79 7.79 0 0 1-7.84 7.75 7.79 7.79 0 0 1-7.8-8.35 7.79 7.79 0 0 1 9.19-8.24v6c-.47-.13-.9-.26-1.39-.26a3.14 3.14 0 0 0-3.09 2.5 3.14 3.14 0 0 0 3.1 2.5c1.74 0 3.14-1.4 3.14-3.11V12.03h4.69a5.6 5.6 0 0 0 5.81 5.74Z" fill="#F09207"></path><path d="M34.34 18.18a5.78 5.78 0 0 1-5.82-5.74h-3.87v15.63c0 1.94-1.6 3.5-3.56 3.5a3.53 3.53 0 0 1-3.55-3.5 3.53 3.53 0 0 1 4.52-3.38v-3.9a7.38 7.38 0 0 0-8.4 7.28 7.38 7.38 0 0 0 7.43 7.34c4.1 0 7.43-3.29 7.43-7.34v-7.98a9.73 9.73 0 0 0 5.82 1.92v-3.83Z" fill="#fff"></path></g><defs><clipPath id="Icon_Color-Tiktok_Coin_svg__a"><path fill="#fff" d="M0 0h48v48H0z"></path></clipPath></defs></svg> ${window.empatadosActuales[0]?.total_diamantes || 0} ${t('diamantes')} cada uno
+            </div>
+            <div style="font-size: 20px; font-weight: 900; opacity: 0.8; margin-top: 20px;">
+              🎉 ${t('seVieneDesempate')} 🎉
+            </div>
+          `;
+        }
+      }
+      
+      console.log('✅ Idioma de las animaciones actualizado');
+    }
+
+    // Función para modificar el tiempo desde el comando
+    function modificarTiempoDesdeComando(segundos, tipo) {
+      // Las funciones mostrarTiempoPositivo y mostrarTiempoNegativo ya modifican
+      // el tiempo y actualizan la interfaz, por lo que solo las llamamos
+      if (tipo === 'sumar') {
+        mostrarTiempoPositivo(segundos);
+      } else if (tipo === 'restar') {
+        mostrarTiempoNegativo(segundos);
+      }
+    }
+
+    var grupoRegalos = {}
+    // Función para procesar donaciones recibidas por socket
+    // Función para procesar una donación recibida y actualizar el ranking de donadores
+    procesarDonacion = (datosDonacion) => {
+      console.log('🎁 Procesando donación:', datosDonacion);
+      // Extraer información relevante del objeto
+      const {
+        uniqueId = null,           // ID único del usuario
+        nickname = null,           // Nombre del usuario
+        profilePictureUrl = null,  // URL de la foto de perfil
+        diamondCount = null,       // Cantidad de diamantes de esta donación
+        giftName = null,           // Nombre del regalo
+        repeatCount = null,        // Cantidad de veces que se repite el regalo
+        timestamp = null           // Timestamp de la donación
+      } = datosDonacion;
+
+      var montoExtra = 1;
+      var groupId = parseInt(datosDonacion?.giftType) === 1 ? datosDonacion?.groupId : datosDonacion?.msgId;
+      console.log('🔎 groupId calculado:', groupId);
+
+      if (groupId != "0") {
+        if (grupoRegalos[groupId]) {
+          montoExtra = datosDonacion.repeatCount - grupoRegalos[groupId];
+          grupoRegalos[groupId] = datosDonacion.repeatCount;
+          console.log(`🔄 Actualizando grupoRegalos[${groupId}] a ${datosDonacion.repeatCount}, montoExtra: ${montoExtra}`);
+        } else {
+          grupoRegalos[groupId] = datosDonacion.repeatCount;
+          montoExtra = datosDonacion.repeatCount;
+          console.log(`🆕 Nuevo grupoRegalos[${groupId}] = ${datosDonacion.repeatCount}, montoExtra: ${montoExtra}`);
+        }
+      }
+
+      // Calcular diamantes totales (diamondCount * repeatCount)
+      const diamantesTotales = montoExtra * parseInt(datosDonacion?.diamondCount);
+      console.log(`💎 Diamantes totales calculados: ${diamantesTotales} (montoExtra: ${montoExtra}, diamondCount: ${datosDonacion?.diamondCount})`);
+
+      if (diamantesTotales <= 0) {
+        console.log('⚠️ Donación sin diamantes válidos, ignorando...');
+        return;
+      }
+
+      // Buscar si el donador ya existe en la lista
+      const donadorExistente = donadores.find(d => d.id === uniqueId);
+
+      if (donadorExistente) {
+        // Actualizar donador existente
+        const diamantesAnteriores = donadorExistente.total_diamantes;
+        donadorExistente.total_diamantes += diamantesTotales;
+        donadorExistente.ultima_donacion = timestamp;
+        donadorExistente.regalos_recibidos = (donadorExistente.regalos_recibidos || 0) + 1;
+
+        console.log(`💰 Donador existente: ${donadorExistente.usernick} suma ${diamantesTotales} diamantes (antes: ${diamantesAnteriores}, ahora: ${donadorExistente.total_diamantes})`);
+
+        // Guardar posición anterior para efectos visuales
+        const posicionAnterior = donadores.findIndex(d => d.id === uniqueId);
+
+        // Reordenar la lista por total de diamantes
+        donadores.sort((a, b) => b.total_diamantes - a.total_diamantes);
+
+        // Obtener nueva posición
+        const nuevaPosicion = donadores.findIndex(d => d.id === uniqueId);
+
+        console.log(`🔄 Posición de ${donadorExistente.usernick}: de ${posicionAnterior} a ${nuevaPosicion}`);
+
+        // Aplicar efectos visuales si cambió de posición
+        setTimeout(() => {
+          aplicarEfectosCambioPosicion(donadorExistente, posicionAnterior, nuevaPosicion);
+        }, 100);
+
+      } else {
+        // Crear nuevo donador
+        const nuevoDonador = {
+          id: uniqueId,
+          usernick: nickname || 'Usuario',
+          userfoto: profilePictureUrl || 'https://via.placeholder.com/35x35/ffd700/000?text=?',
+          total_diamantes: diamantesTotales,
+          ultima_donacion: timestamp,
+          regalos_recibidos: 1,
+          primer_regalo: giftName
+        };
+
+        donadores.push(nuevoDonador);
+        console.log(`🎁 Nuevo donador agregado: ${nuevoDonador.usernick} con ${nuevoDonador.total_diamantes} diamantes`);
+
+        // Reordenar la lista
+        donadores.sort((a, b) => b.total_diamantes - a.total_diamantes);
+      }
+
+      try{
+        socket.emit("conexion_widgets", {
+          widget: SOCKET_IDENTIFICADOR,
+          comando: "nuevo_donador",
+          valores: donadores
+        });
+      }catch(e){
+        console.log("❌ Error enviando nuevo_donador al socket:", e);
+      }
+
+      // Limitar a top 10 donadores
+      if (donadores.length > 10) {
+        console.log('🔟 Limite de top 10 alcanzado, recortando lista');
+        donadores = donadores.slice(0, 10);
+      }
+
+      // Actualizar el ranking en la interfaz
+      actualizarRanking();
+      console.log('🏆 Ranking actualizado');
+
+      // Si está en tiempo snipe, actualizar top en tiempo real
+      if (snipeActivo && !topFinalizado) {
+        console.log('⏱️ Snipe activo, actualizando top en tiempo real');
+        actualizarTopEnTiempoReal();
+      }
+      console.log('✅ Donación procesada correctamente');
+      return true; // Indicar que la donación fue procesada exitosamente
+    }
+    
+    // Función para actualizar top en tiempo real durante snipe
+    function actualizarTopEnTiempoReal() {
+      console.log('🔄 Actualizando top en tiempo real durante snipe...');
+      
+      // Ordenar participantes por donación más alta
+      const topActual = [...donadores].sort((a, b) => b.total_diamantes - a.total_diamantes);
+      
+      // Actualizar display del top
+      actualizarRanking();
+      
+      // Agregar indicador visual de que se está actualizando
+      const rankingElement = document.getElementById('ranking');
+      if (rankingElement) {
+        rankingElement.style.border = '3px solid #ff6b6b';
+        rankingElement.style.boxShadow = '0 0 20px rgba(255, 107, 107, 0.6)';
+        
+        // Remover el indicador después de un tiempo
+        setTimeout(() => {
+          rankingElement.style.border = '2px solid rgba(255, 255, 255, 0.1)';
+          rankingElement.style.boxShadow = 'none';
+        }, 2000);
+      }
+      
+      console.log('✅ Top actualizado en tiempo real');
+    }
+    
+    // Función para aplicar efectos visuales cuando cambia la posición
+    function aplicarEfectosCambioPosicion(donador, posicionAnterior, nuevaPosicion) {
+      const donadorElement = document.querySelector(`[data-id="${donador.id}"]`);
+      
+      if (!donadorElement) return;
+      
+      if (nuevaPosicion < posicionAnterior) {
+        // Subió de posición
+        // console.log(`🎯 ${donador.usernick} SUBIÓ de posición ${posicionAnterior + 1} a ${nuevaPosicion + 1}`);
+        donadorElement.classList.add('cambio-subida');
+        crearEfectosSubida(donadorElement);
+        setTimeout(() => {
+          donadorElement.classList.remove('cambio-subida');
+        }, 1500);
+      } else if (nuevaPosicion > posicionAnterior) {
+        // Bajó de posición
+        // console.log(`📉 ${donador.usernick} BAJÓ de posición ${posicionAnterior + 1} a ${nuevaPosicion + 1}`);
+        donadorElement.classList.add('cambio-bajada');
+        crearEfectosBajada(donadorElement);
+        setTimeout(() => {
+          donadorElement.classList.remove('cambio-bajada');
+        }, 1500);
+      } else {
+        // Misma posición
+        // console.log(`➡️ ${donador.usernick} mantiene posición ${posicionAnterior + 1}`);
+        donadorElement.classList.add('cambio');
+        crearEfectosCambio(donadorElement);
+        setTimeout(() => {
+          donadorElement.classList.remove('cambio');
+        }, 1200);
+      }
+    }
+    
+    // Función para limpiar el ranking y mostrar mensaje de inicio
+    function limpiarRanking() {
+      const rankingElement = document.getElementById('ranking');
+      const rankingTitle = document.getElementById('rankingTitle');
+      
+      // Limpiar completamente el estado visual
+      rankingElement.className = 'ranking';
+      rankingTitle.textContent = 'TOP 10 DONADORES';
+      
+      // Mostrar mensaje de inicio limpio
+      rankingElement.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">🎯 ¡La subasta ha comenzado!<br>Envía regalos para aparecer en el ranking</div>';
+      
+      // Asegurar que no haya elementos con clases de finalización
+      rankingElement.classList.remove('finalizado');
+      
+      // console.log('🧹 Ranking limpiado completamente para nueva subasta');
+    }
+
+    // Función para activar el tiempo snipe
+    function activarTiempoSnipe() {
+      console.log('🔥 ¡TIEMPO SNIPE ACTIVADO!');
+      snipeActivo = true;
+      // Asegurar que el tiempo de snipe sea correcto
+      if (tiempoSnipeConfigurado > 0) {
+        tiempoRestanteSnipe = Math.floor(tiempoSnipeConfigurado / 1000); // Convertir ms a segundos
+      } else {
+        // Si no hay tiempo configurado, usar el valor de tiempoSnipe
+        if (tiempoSnipe > 0) {
+          tiempoRestanteSnipe = tiempoSnipe;
+          tiempoSnipeConfigurado = tiempoSnipe * 1000; // Configurar también aquí
+        } else {
+          tiempoRestanteSnipe = 5; // Valor por defecto
+          tiempoSnipeConfigurado = 5000;
+        }
+      }
+      console.log(`🔧 Debug - tiempoSnipe: ${tiempoSnipe}s`);
+      console.log(`🔧 Debug - tiempoSnipeConfigurado: ${tiempoSnipeConfigurado}ms`);
+      console.log(`🔧 Debug - tiempoRestanteSnipe inicializado: ${tiempoRestanteSnipe}s`);
+      // Verificar que el tiempo sea válido antes de continuar
+      if (tiempoRestanteSnipe <= 0) {
+        console.error('❌ Tiempo de snipe inválido, usando valor por defecto');
+        tiempoRestanteSnipe = 5;
+        tiempoSnipeConfigurado = 5000;
+      }
+      // MOSTRAR EL DELAY TIMER CON EL TIEMPO DE SNIPE
+      const delayTimerContainer = document.getElementById('delaytimercontainer');
+      const delayTimer = document.getElementById('delaytimer');
+      if (delayTimerContainer && delayTimer) {
+        delayTimerContainer.style.display = 'flex';
+        delayTimer.textContent = `${tiempoRestanteSnipe}s`;
+        delayTimer.style.color = '#ff6b6b';
+        delayTimer.style.fontWeight = '900';
+        delayTimer.style.animation = 'parpadeoSnipe 1s infinite';
+      }
+      // Cambiar visual del timer principal - MANTENERLO EN 0:00
+      const timerElement = document.getElementById('timer');
+      if (timerElement) {
+        timerElement.textContent = '0:00';
+        timerElement.style.color = '#ff0000';
+        timerElement.style.fontWeight = 'bold';
+        timerElement.style.textShadow = '0 0 20px rgba(255, 0, 0, 0.8)';
+        timerElement.style.animation = 'parpadeoSnipe 1s infinite';
+      }
+      // Mostrar mensaje de snipe
+      mostrarMensajeSnipe();
+      // Cambiar estado de la subasta
+      const statusElement = document.getElementById('status');
+      if (statusElement) {
+        statusElement.innerHTML = `
+          🔥 ¡TIEMPO SNIPE ACTIVO! ¡Últimas donaciones!<br>
+                  <span style="font-size: 20px; opacity: 0.9; display: block; margin-top: 3px;">
+          ⚠️ <strong>NO DONES</strong> si ves el timer principal en 0:00
+        </span>
+        `;
+        statusElement.style.color = '#ff6b6b';
+        statusElement.style.fontWeight = '900';
+        statusElement.style.background = 'rgba(255, 107, 107, 0.1)';
+        statusElement.style.borderColor = 'rgba(255, 107, 107, 0.5)';
+      }
+      // Iniciar timer del snipe
+      iniciarTimerSnipe();
+      console.log(`⏰ Tiempo snipe iniciado: ${tiempoRestanteSnipe} segundos`);
+    }
+    
+    // Función para mostrar mensaje de snipe
+    function mostrarMensajeSnipe() {
+      // Remover mensaje anterior si existe
+      const mensajeAnterior = document.getElementById('mensajeSnipe');
+      if (mensajeAnterior) {
+        mensajeAnterior.remove();
+      }
+    }
+  </script>
+</body>
+</html>
